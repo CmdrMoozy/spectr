@@ -83,6 +83,7 @@ int decode(char **buf, size_t *bufSize, const char *f)
 int decode_with_codec(char **buf, size_t *bufSize, const char *f,
 	ftype_t t, enum AVCodecID c)
 {
+	int ret = 0;
 	AVCodec *codec;
 	AVCodecContext *ctxt = NULL;
 	FILE *in;
@@ -97,15 +98,24 @@ int decode_with_codec(char **buf, size_t *bufSize, const char *f,
 	codec = avcodec_find_decoder(c);
 
 	if(!codec)
-		return -EINVAL;
+	{
+		ret = -EINVAL;
+		goto done;
+	}
 
 	ctxt = avcodec_alloc_context3(codec);
 
 	if(!ctxt)
-		return -EINVAL;
+	{
+		ret = -EINVAL;
+		goto done;
+	}
 
 	if(avcodec_open2(ctxt, codec, NULL) < 0)
-		return -EINVAL;
+	{
+		ret = -EINVAL;
+		goto err_after_context;
+	}
 
 	// Deal with any file forma quirks, so ffmpeg can decode successfully.
 
@@ -120,7 +130,10 @@ int decode_with_codec(char **buf, size_t *bufSize, const char *f,
 		r = get_mp3_frame_header_offset(&off, f);
 
 		if(r < 0)
-			return r;
+		{
+			ret = r;
+			goto err_after_context;
+		}
 	}
 
 	// Decode the given input file.
@@ -128,23 +141,32 @@ int decode_with_codec(char **buf, size_t *bufSize, const char *f,
 	in = fopen(f, "rb");
 
 	if(!in)
-		return -EIO;
+	{
+		ret = -EIO;
+		goto err_after_context;
+	}
 
 	out = open_memstream(buf, bufSize);
 
 	if(!out)
-		return -EIO;
+	{
+		ret = -EIO;
+		goto err_after_open_in;
+	}
 
-	r = decode_with_context(in, off, out, ctxt);
+	ret = decode_with_context(in, off, out, ctxt);
 
 	fclose(out);
 
+err_after_open_in:
 	fclose(in);
 
+err_after_context:
 	avcodec_close(ctxt);
 	av_free(ctxt);
 
-	return r;
+done:
+	return ret;
 }
 
 /*!
@@ -159,6 +181,7 @@ int decode_with_codec(char **buf, size_t *bufSize, const char *f,
  */
 int decode_with_context(FILE *in, size_t off, FILE *out, AVCodecContext *ctxt)
 {
+	int ret = 0;
 	int r;
 	uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
 	AVPacket avpkt;
@@ -170,7 +193,10 @@ int decode_with_context(FILE *in, size_t off, FILE *out, AVCodecContext *ctxt)
 	r = fseek(in, off, 0);
 
 	if(r < 0)
-		return -errno;
+	{
+		ret = -errno;
+		goto done;
+	}
 
 	av_init_packet(&avpkt);
 
@@ -182,14 +208,22 @@ int decode_with_context(FILE *in, size_t off, FILE *out, AVCodecContext *ctxt)
 		gotFrame = 0;
 
 		if(!decodedFrame)
+		{
 			if(!(decodedFrame = avcodec_alloc_frame()))
-				return -EINVAL;
+			{
+				ret = -EINVAL;
+				goto done;
+			}
+		}
 
 		len = avcodec_decode_audio4(ctxt, decodedFrame,
 			&gotFrame, &avpkt);
 
 		if(len < 0)
-			return -EIO;
+		{
+			ret = -EIO;
+			goto done;
+		}
 
 		if(gotFrame)
 		{
@@ -198,7 +232,10 @@ int decode_with_context(FILE *in, size_t off, FILE *out, AVCodecContext *ctxt)
 				ctxt->sample_fmt, 1);
 
 			if(dataSize < 0)
-				return -EINVAL;
+			{
+				ret = -EINVAL;
+				goto done;
+			}
 
 			fwrite(decodedFrame->data[0], sizeof(uint8_t),
 				dataSize, out);
@@ -221,9 +258,11 @@ int decode_with_context(FILE *in, size_t off, FILE *out, AVCodecContext *ctxt)
 		}
 	}
 
-	avcodec_free_frame(&decodedFrame);
+done:
+	if(decodedFrame)
+		avcodec_free_frame(&decodedFrame);
 
 	fflush(out);
 
-	return 0;
+	return ret;
 }

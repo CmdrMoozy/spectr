@@ -24,6 +24,7 @@
 
 int main(int argc, char *argv[])
 {
+	int ret = EXIT_SUCCESS;
 	char *audio = NULL;
 	size_t audioSize;
 	int r;
@@ -32,7 +33,9 @@ int main(int argc, char *argv[])
 	if(argc < 2)
 	{
 		printf("Usage: spectr <file to analyze> [PCM out file]\n");
-		return EXIT_FAILURE;
+
+		ret = EXIT_FAILURE;
+		goto done;
 	}
 
 	// Decode the input file we were given.
@@ -42,7 +45,9 @@ int main(int argc, char *argv[])
 	if(r != 0)
 	{
 		printf("Fatal error %d: %s\n", -r, strerror(-r));
-		return EXIT_FAILURE;
+
+		ret = EXIT_FAILURE;
+		goto err_after_decode;
 	}
 
 	// If we were given an output file, write our decoded input.
@@ -60,7 +65,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
+err_after_decode:
 	free(audio);
-
-	return EXIT_SUCCESS;
+done:
+	return ret;
 }

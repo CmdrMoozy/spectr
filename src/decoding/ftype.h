@@ -16,51 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef INCLUDE_FTYPE_H
+#define INCLUDE_FTYPE_H
 
-#include "decoding/decode.h"
+#ifdef HAVE_AV_CONFIG_H
+#undef HAVE_AV_CONFIG_H
+#endif
 
-int main(int argc, char *argv[])
-{
-	char *audio = NULL;
-	size_t audioSize;
-	int r;
-	FILE *pcmout;
+#include <libavcodec/avcodec.h>
 
-	if(argc < 2)
-	{
-		printf("Usage: spectr <file to analyze> [PCM out file]\n");
-		return EXIT_FAILURE;
-	}
+#include "spectr_types.h"
 
-	// Decode the input file we were given.
+extern int ftype(ftype_t *, const char *);
+extern enum AVCodecID codec_for_ftype(ftype_t);
 
-	r = decode(&audio, &audioSize, argv[1]);
-
-	if(r != 0)
-	{
-		printf("Fatal error %d: %s\n", -r, strerror(-r));
-		return EXIT_FAILURE;
-	}
-
-	// If we were given an output file, write our decoded input.
-
-	if(argc > 2)
-	{
-		pcmout = fopen(argv[2], "wb");
-
-		if(pcmout)
-		{
-			fwrite(audio, audioSize, sizeof(char), pcmout);
-
-			fflush(pcmout);
-			fclose(pcmout);
-		}
-	}
-
-	free(audio);
-
-	return EXIT_SUCCESS;
-}
+#endif

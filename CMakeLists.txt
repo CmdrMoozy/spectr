@@ -22,11 +22,12 @@ IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_BUILD_TYPE "Release")
 ENDIF()
 
-SET(DBG_FLAGS "-rdynamic -Wall -Wextra -ansi -pedantic -Wshadow")
-SET(DBG_FLAGS "${DBG_FLAGS} -Wpointer-arith -Wcast-qual -O0")
+SET(DBG_FLAGS "-D_XOPEN_SOURCE=700 -rdynamic -Wall -Wextra -ansi -pedantic")
+SET(DBG_FLAGS "${DBG_FLAGS} -Wshadow -Wpointer-arith -Wcast-qual -O0 -std=c11")
 
-SET(REL_FLAGS "-Wall -Wextra -ansi -pedantic -Wshadow -Wpointer-arith")
-SET(REL_FLAGS "${REL_FLAGS} -Wcast-qual -fomit-frame-pointer")
+SET(REL_FLAGS "-D_XOPEN_SOURCE=700 -Wall -Wextra -ansi -pedantic -Wshadow")
+SET(REL_FLAGS "${REL_FLAGS} -Wpointer-arith -Wcast-qual -fomit-frame-pointer")
+SET(REL_FLAGS "${REL_FLAGS} -std=c11")
 
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${DBG_FLAGS}")
 SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${REL_FLAGS}")
@@ -37,7 +38,14 @@ INCLUDE_DIRECTORIES("src")
 
 SET(spectr_HEADERS
 
+	src/spectr_types.h
 
+	src/decoding/decode.h
+	src/decoding/ftype.h
+
+	src/decoding/quirks/mp3.h
+
+	src/util/bitwise.h
 
 )
 
@@ -45,8 +53,16 @@ SET(spectr_SOURCES
 
 	src/spectr.c
 
+	src/decoding/decode.c
+	src/decoding/ftype.c
+
+	src/decoding/quirks/mp3.c
+
+	src/util/bitwise.c
+
 )
 
 # Build our project!
 
 ADD_EXECUTABLE(spectr ${spectr_SOURCES})
+TARGET_LINK_LIBRARIES(spectr avformat avcodec avutil)

@@ -16,51 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#ifndef INCLUDE_SPECTR_TYPES_H
+#define INCLUDE_SPECTR_TYPES_H
 
-#include "decoding/decode.h"
+/*!
+ * \brief This enum contains all of our supported file types.
+ */
+typedef enum {
+	FTYPE_MP3,
+	FTYPE_FLAC,
+	FTYPE_OGG,
+	FTYPE_AAC,
+	FTYPE_INVALID
+} ftype_t;
 
-int main(int argc, char *argv[])
-{
-	char *audio = NULL;
-	size_t audioSize;
-	int r;
-	FILE *pcmout;
-
-	if(argc < 2)
-	{
-		printf("Usage: spectr <file to analyze> [PCM out file]\n");
-		return EXIT_FAILURE;
-	}
-
-	// Decode the input file we were given.
-
-	r = decode(&audio, &audioSize, argv[1]);
-
-	if(r != 0)
-	{
-		printf("Fatal error %d: %s\n", -r, strerror(-r));
-		return EXIT_FAILURE;
-	}
-
-	// If we were given an output file, write our decoded input.
-
-	if(argc > 2)
-	{
-		pcmout = fopen(argv[2], "wb");
-
-		if(pcmout)
-		{
-			fwrite(audio, audioSize, sizeof(char), pcmout);
-
-			fflush(pcmout);
-			fclose(pcmout);
-		}
-	}
-
-	free(audio);
-
-	return EXIT_SUCCESS;
-}
+#endif

@@ -24,6 +24,7 @@ ENDIF()
 
 SET(DBG_FLAGS "-D_XOPEN_SOURCE=700 -rdynamic -Wall -Wextra -ansi -pedantic")
 SET(DBG_FLAGS "${DBG_FLAGS} -Wshadow -Wpointer-arith -Wcast-qual -O0 -std=c11")
+SET(DBG_FLAGS "${DBG_FLAGS} -DSPECTR_DEBUG")
 
 SET(REL_FLAGS "-D_XOPEN_SOURCE=700 -Wall -Wextra -ansi -pedantic -Wshadow")
 SET(REL_FLAGS "${REL_FLAGS} -Wpointer-arith -Wcast-qual -fomit-frame-pointer")
@@ -42,6 +43,7 @@ SET(spectr_HEADERS
 
 	src/decoding/decode.h
 	src/decoding/ftype.h
+	src/decoding/stat.h
 
 	src/decoding/quirks/mp3.h
 
@@ -55,6 +57,7 @@ SET(spectr_SOURCES
 
 	src/decoding/decode.c
 	src/decoding/ftype.c
+	src/decoding/stat.c
 
 	src/decoding/quirks/mp3.c
 

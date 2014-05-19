@@ -19,8 +19,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
+#include "spectr_types.h"
 #include "decoding/decode.h"
+#include "decoding/stat.h"
+
+void print_error(int);
 
 int main(int argc, char *argv[])
 {
@@ -29,6 +34,7 @@ int main(int argc, char *argv[])
 	size_t audioSize;
 	int r;
 	FILE *pcmout;
+	audio_stat_t stat;
 
 	if(argc < 2)
 	{
@@ -44,8 +50,7 @@ int main(int argc, char *argv[])
 
 	if(r != 0)
 	{
-		printf("Fatal error %d: %s\n", -r, strerror(-r));
-
+		print_error(r);
 		ret = EXIT_FAILURE;
 		goto err_after_decode;
 	}
@@ -65,8 +70,29 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	// Get the properties of the input file.
+
+	r = audio_stat(&stat, argv[1]);
+
+	if(r < 0)
+	{
+		print_error(r);
+		ret = EXIT_FAILURE;
+		goto err_after_decode;
+	}
+
+#ifdef SPECTR_DEBUG
+	printf("Loaded input file - %" PRIu32 " Hz / %" PRIu32 "-bit\n",
+		stat.sample_rate, stat.bit_depth);
+#endif
+
 err_after_decode:
 	free(audio);
 done:
 	return ret;
+}
+
+void print_error(int error)
+{
+	printf("Fatal error %d: %s\n", -error, strerror(-error));
 }

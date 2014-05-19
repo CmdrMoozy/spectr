@@ -16,30 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_TYPES_H
-#define INCLUDE_SPECTR_TYPES_H
+#ifndef INCLUDE_STAT_H
+#define INCLUDE_STAT_H
 
-#include <stdint.h>
+#include "spectr_types.h"
 
-/*!
- * \brief This enum contains all of our supported file types.
- */
-typedef enum {
-	FTYPE_MP3,
-	FTYPE_FLAC,
-	FTYPE_OGG,
-	FTYPE_AAC,
-	FTYPE_INVALID
-} ftype_t;
-
-/*!
- * \brief This struct defines the various properties of an audio stream.
- */
-typedef struct audio_stat
-{
-	ftype_t type;
-	uint32_t bit_depth;
-	uint32_t sample_rate;
-} audio_stat_t;
+extern int audio_stat(audio_stat_t *, const char *);
 
 #endif

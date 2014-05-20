@@ -60,6 +60,11 @@ int s_audio_stat(s_audio_stat_t *stat, const char *f)
 	if((stat->bit_depth & 7) != 0)
 		return -EINVAL;
 
+	// We also guarantee that the bit_depth will never be larger than 32.
+
+	if(stat->bit_depth > 32)
+		return -EINVAL;
+
 	return 0;
 }
 

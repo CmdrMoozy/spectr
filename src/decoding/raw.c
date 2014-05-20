@@ -180,6 +180,63 @@ done:
 }
 
 /*!
+ * This function writes the contents of the given s_raw_audio_t structure to
+ * the given file, in raw PCM format.
+ *
+ * \param out The file to write the data to.
+ * \param raw The raw audio object whose data will be written.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_write_raw_audio(FILE *out, const s_raw_audio_t *raw)
+{
+	size_t i;
+	uint32_t byte;
+	uint8_t buf[4];
+	size_t bufidx;
+	uint32_t shift;
+	size_t written;
+
+	uint32_t byted = raw->stat.bit_depth >> 3;
+
+	for(i = 0; i < raw->samples_length; ++i)
+	{
+		// Write the left sample.
+
+		bufidx = 0;
+
+		for(byte = byted; byte > 0; --byte)
+		{
+			shift = (byte - 1) << 3;
+			buf[bufidx++] = (raw->samples[i].l >> shift) & 0xFF;
+		}
+
+		written = fwrite(buf, sizeof(uint8_t), byted, out);
+
+		if(written != byted)
+			return -EINVAL;
+
+		// Write the right sample.
+
+		bufidx = 0;
+
+		for(byte = byted; byte > 0; --byte)
+		{
+			shift = (byte - 1) << 3;
+			buf[bufidx++] = (raw->samples[i].r >> shift) & 0xFF;
+		}
+
+		written = fwrite(buf, sizeof(uint8_t), byted, out);
+
+		if(written != byted)
+			return -EINVAL;
+	}
+
+	fflush(out);
+
+	return 0;
+}
+
+/*!
  * This function reads and interprets the next sample from the given byte
  * buffer. We return true if there are more samples to be read, or false if
  * we've reached the end of the buffer.

@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "spectr_types.h"
 #include "decoding/raw.h"
@@ -78,6 +79,31 @@ int main(int argc, char *argv[])
 	printf("\t%zu samples yields duration of %" PRIu32 "m %" PRIu32 "s\n",
 		audio->samples_length, duration / 60, duration % 60);
 #endif
+
+	// If applicable, dump the raw data back to a file (for debugging).
+
+	if(argc >= 3)
+	{
+		FILE *out = fopen(argv[2], "wb");
+
+		if(out == NULL)
+		{
+			s_print_error(-errno);
+			ret = EXIT_FAILURE;
+			goto err_after_alloc;
+		}
+
+		r = s_write_raw_audio(out, audio);
+
+		fclose(out);
+
+		if(r < 0)
+		{
+			s_print_error(r);
+			ret = EXIT_FAILURE;
+			goto err_after_alloc;
+		}
+	}
 
 err_after_alloc:
 	s_free_raw_audio(&audio);

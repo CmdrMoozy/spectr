@@ -19,11 +19,15 @@
 #ifndef INCLUDE_RAW_H
 #define INCLUDE_RAW_H
 
+#include <stdio.h>
+
 #include "spectr_types.h"
 
 extern int s_init_raw_audio(s_raw_audio_t **);
 extern int s_free_raw_audio(s_raw_audio_t **);
 
 extern int s_decode_raw_audio(s_raw_audio_t *, const char *);
+
+extern int s_write_raw_audio(FILE *, const s_raw_audio_t *);
 
 #endif

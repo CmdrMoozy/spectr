@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <errno.h>
+#include <math.h>
 
 #include "decoding/ftype.h"
 #include "decoding/quirks/mp3.h"
@@ -50,6 +51,24 @@ int s_audio_stat(s_audio_stat_t *stat, const char *f)
 		case FTYPE_MP3: return s_audio_stat_mp3(stat, f);
 		default: return -EINVAL;
 	}
+}
+
+/*!
+ * This function returns the duration in seconds of an audio stream with the
+ * given stats and the given number of samples.
+ *
+ * \param stat The stats of the audio in question.
+ * \param samples The number of samples.
+ * \return The duration of the audio, in seconds.
+ */
+uint32_t s_audio_duration_sec(const s_audio_stat_t *stat, size_t samples)
+{
+	uint32_t d = 0;
+
+	if(stat->sample_rate > 0)
+		d = samples / stat->sample_rate;
+
+	return d;
 }
 
 /*!

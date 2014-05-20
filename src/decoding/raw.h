@@ -16,15 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_STAT_H
-#define INCLUDE_STAT_H
-
-#include <stdint.h>
+#ifndef INCLUDE_RAW_H
+#define INCLUDE_RAW_H
 
 #include "spectr_types.h"
 
-extern int s_audio_stat(s_audio_stat_t *, const char *);
+extern int s_init_raw_audio(s_raw_audio_t **);
+extern int s_free_raw_audio(s_raw_audio_t **);
 
-extern uint32_t s_audio_duration_sec(const s_audio_stat_t *, size_t);
+extern int s_decode_raw_audio(s_raw_audio_t *, const char *);
 
 #endif

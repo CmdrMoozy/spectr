@@ -20,6 +20,7 @@
 #define INCLUDE_SPECTR_TYPES_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 /*!
  * \brief This enum contains all of our supported file types.
@@ -41,5 +42,28 @@ typedef struct s_audio_stat
 	uint32_t bit_depth;
 	uint32_t sample_rate;
 } s_audio_stat_t;
+
+/*!
+ * \brief This struct defines a single stereo audio sample.
+ *
+ * Note that, although this struct stores a 32-bit sample, the sample actually
+ * being stored might in fact be a 16-bit or 24-bit sample. It is up to the
+ * user of this struct to keep track of this.
+ */
+typedef struct s_stereo_sample
+{
+	int32_t l;
+	int32_t r;
+} s_stereo_sample_t;
+
+/*!
+ * \brief This struct stores the contents of a raw audio file.
+ */
+typedef struct s_raw_audio
+{
+	s_audio_stat_t stat;
+	size_t samples_length;
+	s_stereo_sample_t *samples;
+} s_raw_audio_t;
 
 #endif

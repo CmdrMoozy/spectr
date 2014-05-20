@@ -19,22 +19,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <inttypes.h>
 
 #include "spectr_types.h"
-#include "decoding/decode.h"
-#include "decoding/stat.h"
+#include "decoding/raw.h"
+
+#ifdef SPECTR_DEBUG
+	#include <inttypes.h>
+
+	#include "decoding/stat.h"
+#endif
 
 void s_print_error(int);
 
 int main(int argc, char *argv[])
 {
 	int ret = EXIT_SUCCESS;
-	char *audio = NULL;
-	size_t audioSize;
 	int r;
-	FILE *pcmout;
-	s_audio_stat_t stat;
+	s_raw_audio_t *audio = NULL;
+
+#ifdef SPECTR_DEBUG
+	uint32_t duration;
+#endif
 
 	if(argc < 2)
 	{
@@ -46,48 +51,36 @@ int main(int argc, char *argv[])
 
 	// Decode the input file we were given.
 
-	r = s_decode(&audio, &audioSize, argv[1]);
-
-	if(r != 0)
-	{
-		s_print_error(r);
-		ret = EXIT_FAILURE;
-		goto err_after_decode;
-	}
-
-	// If we were given an output file, write our decoded input.
-
-	if(argc > 2)
-	{
-		pcmout = fopen(argv[2], "wb");
-
-		if(pcmout)
-		{
-			fwrite(audio, audioSize, sizeof(char), pcmout);
-
-			fflush(pcmout);
-			fclose(pcmout);
-		}
-	}
-
-	// Get the properties of the input file.
-
-	r = s_audio_stat(&stat, argv[1]);
+	r = s_init_raw_audio(&audio);
 
 	if(r < 0)
 	{
 		s_print_error(r);
 		ret = EXIT_FAILURE;
-		goto err_after_decode;
+		goto done;
+	}
+
+	r = s_decode_raw_audio(audio, argv[1]);
+
+	if(r < 0)
+	{
+		s_print_error(r);
+		ret = EXIT_FAILURE;
+		goto err_after_alloc;
 	}
 
 #ifdef SPECTR_DEBUG
-	printf("Loaded input file - %" PRIu32 " Hz / %" PRIu32 "-bit\n",
-		stat.sample_rate, stat.bit_depth);
+	printf("Loaded input file - %" PRIu32 " Hz / %" PRIu32 "-bit.\n",
+		audio->stat.sample_rate, audio->stat.bit_depth);
+
+	duration = s_audio_duration_sec(&(audio->stat), audio->samples_length);
+
+	printf("\t%zu samples yields duration of %" PRIu32 "m %" PRIu32 "s\n",
+		audio->samples_length, duration / 60, duration % 60);
 #endif
 
-err_after_decode:
-	free(audio);
+err_after_alloc:
+	s_free_raw_audio(&audio);
 done:
 	return ret;
 }

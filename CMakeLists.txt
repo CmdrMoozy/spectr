@@ -43,6 +43,7 @@ SET(spectr_HEADERS
 
 	src/decoding/decode.h
 	src/decoding/ftype.h
+	src/decoding/raw.h
 	src/decoding/stat.h
 
 	src/decoding/quirks/mp3.h
@@ -57,6 +58,7 @@ SET(spectr_SOURCES
 
 	src/decoding/decode.c
 	src/decoding/ftype.c
+	src/decoding/raw.c
 	src/decoding/stat.c
 
 	src/decoding/quirks/mp3.c
@@ -68,4 +70,4 @@ SET(spectr_SOURCES
 # Build our project!
 
 ADD_EXECUTABLE(spectr ${spectr_SOURCES})
-TARGET_LINK_LIBRARIES(spectr avformat avcodec avutil)
+TARGET_LINK_LIBRARIES(spectr m avformat avcodec avutil)

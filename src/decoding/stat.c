@@ -24,8 +24,8 @@
 #include "decoding/ftype.h"
 #include "decoding/quirks/mp3.h"
 
-int audio_stat_mp3(audio_stat_t *, const char *);
-int interpret_mp3_rate(audio_stat_t *, uint8_t, uint8_t);
+int s_audio_stat_mp3(s_audio_stat_t *, const char *);
+int s_interpret_mp3_rate(s_audio_stat_t *, uint8_t, uint8_t);
 
 /*!
  * This function will populate an audio_stat_t instance's values with the
@@ -35,19 +35,19 @@ int interpret_mp3_rate(audio_stat_t *, uint8_t, uint8_t);
  * \param f The path to the file to inspect.
  * \return 0 on success, or an error number of something goes wrong.
  */
-int audio_stat(audio_stat_t *stat, const char *f)
+int s_audio_stat(s_audio_stat_t *stat, const char *f)
 {
 	int r;
-	ftype_t type;
+	s_ftype_t type;
 
-	r = ftype(&type, f);
+	r = s_ftype(&type, f);
 
 	if(r < 0)
 		return r;
 
 	switch(type)
 	{
-		case FTYPE_MP3: return audio_stat_mp3(stat, f);
+		case FTYPE_MP3: return s_audio_stat_mp3(stat, f);
 		default: return -EINVAL;
 	}
 }
@@ -61,7 +61,7 @@ int audio_stat(audio_stat_t *stat, const char *f)
  * \param f The path to the file to inspect.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int audio_stat_mp3(audio_stat_t *stat, const char *f)
+int s_audio_stat_mp3(s_audio_stat_t *stat, const char *f)
 {
 	int ret = 0;
 	int r;
@@ -77,7 +77,7 @@ int audio_stat_mp3(audio_stat_t *stat, const char *f)
 
 	// Get the offset of the first MP3 frame header, and open the file.
 
-	r = get_mp3_frame_header_offset(&off, f);
+	r = s_get_mp3_frame_header_offset(&off, f);
 
 	if(r < 0)
 	{
@@ -137,7 +137,7 @@ int audio_stat_mp3(audio_stat_t *stat, const char *f)
 	version = (header[1] & 0x18) >> 3;
 	rate = (header[2] & 0x0C) >> 2;
 
-	r = interpret_mp3_rate(stat, version, rate);
+	r = s_interpret_mp3_rate(stat, version, rate);
 
 	if(r < 0)
 	{
@@ -162,7 +162,7 @@ done:
  * \param rate The sampling rate index value from the MP3 frame header.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int interpret_mp3_rate(audio_stat_t *stat, uint8_t version, uint8_t rate)
+int s_interpret_mp3_rate(s_audio_stat_t *stat, uint8_t version, uint8_t rate)
 {
 	int ret = 0;
 

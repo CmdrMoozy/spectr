@@ -21,6 +21,6 @@
 
 #include "spectr_types.h"
 
-extern int audio_stat(audio_stat_t *, const char *);
+extern int s_audio_stat(s_audio_stat_t *, const char *);
 
 #endif

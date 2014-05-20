@@ -27,7 +27,7 @@
 
 #include "spectr_types.h"
 
-extern int ftype(ftype_t *, const char *);
-extern enum AVCodecID codec_for_ftype(ftype_t);
+extern int s_ftype(s_ftype_t *, const char *);
+extern enum AVCodecID s_codec_for_ftype(s_ftype_t);
 
 #endif

@@ -22,6 +22,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-extern uint32_t fromSynchsafeInt32(const uint8_t *, size_t);
+extern uint32_t s_from_synchsafe_int32(const uint8_t *, size_t);
 
 #endif

@@ -31,13 +31,13 @@
  * \param f The path to the file whose type will be determined.
  * \return 0 on success, or an error number otherwise.
  */
-int ftype(ftype_t *t, const char *f)
+int s_ftype(s_ftype_t *t, const char *f)
 {
 	size_t off;
 
 	*t = FTYPE_INVALID;
 
-	if(get_mp3_frame_header_offset(&off, f) == 0)
+	if(s_get_mp3_frame_header_offset(&off, f) == 0)
 	{
 		*t = FTYPE_MP3;
 		return 0;
@@ -54,7 +54,7 @@ int ftype(ftype_t *t, const char *f)
  * \param t The file type to find a codec for.
  * \return The ffmpeg codec which can be used to decode the given file type.
  */
-enum AVCodecID codec_for_ftype(ftype_t t)
+enum AVCodecID s_codec_for_ftype(s_ftype_t t)
 {
 	switch(t)
 	{

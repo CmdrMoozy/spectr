@@ -32,9 +32,9 @@
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
 
-int decode_with_codec(char **, size_t *, const char *,
-	ftype_t, enum AVCodecID);
-int decode_with_context(FILE *, size_t, FILE *, AVCodecContext *);
+int s_decode_with_codec(char **, size_t *, const char *,
+	s_ftype_t, enum AVCodecID);
+int s_decode_with_context(FILE *, size_t, FILE *, AVCodecContext *);
 
 /*!
  * This function decodes the contents of the file denoted the the path f,
@@ -50,23 +50,23 @@ int decode_with_context(FILE *, size_t, FILE *, AVCodecContext *);
  * \param f The path to the file to decode.
  * \return 0 on success, or an error number if decoding fails.
  */
-int decode(char **buf, size_t *bufSize, const char *f)
+int s_decode(char **buf, size_t *bufSize, const char *f)
 {
 	int r;
-	ftype_t type;
+	s_ftype_t type;
 	enum AVCodecID codecID;
 
-	r = ftype(&type, f);
+	r = s_ftype(&type, f);
 
 	if(r != 0)
 		return r;
 
-	codecID = codec_for_ftype(type);
+	codecID = s_codec_for_ftype(type);
 
 	if(codecID == AV_CODEC_ID_NONE)
 		return -EINVAL;
 
-	return decode_with_codec(buf, bufSize, f, type, codecID);
+	return s_decode_with_codec(buf, bufSize, f, type, codecID);
 }
 
 /*!
@@ -80,8 +80,8 @@ int decode(char **buf, size_t *bufSize, const char *f)
  * \param c The ffmpeg codec to use to decode the file.
  * \return 0 on success, or an error number if decoding fails.
  */
-int decode_with_codec(char **buf, size_t *bufSize, const char *f,
-	ftype_t t, enum AVCodecID c)
+int s_decode_with_codec(char **buf, size_t *bufSize, const char *f,
+	s_ftype_t t, enum AVCodecID c)
 {
 	int ret = 0;
 	AVCodec *codec;
@@ -127,7 +127,7 @@ int decode_with_codec(char **buf, size_t *bufSize, const char *f,
 		 * the first valid MP3 frame.
 		 */
 
-		r = get_mp3_frame_header_offset(&off, f);
+		r = s_get_mp3_frame_header_offset(&off, f);
 
 		if(r < 0)
 		{
@@ -154,7 +154,7 @@ int decode_with_codec(char **buf, size_t *bufSize, const char *f,
 		goto err_after_open_in;
 	}
 
-	ret = decode_with_context(in, off, out, ctxt);
+	ret = s_decode_with_context(in, off, out, ctxt);
 
 	fclose(out);
 
@@ -179,7 +179,7 @@ done:
  * \param ctxt The ffmpeg context to use to decode the input file.
  * \return 0 on success, or an error number if decoding fails.
  */
-int decode_with_context(FILE *in, size_t off, FILE *out, AVCodecContext *ctxt)
+int s_decode_with_context(FILE *in, size_t off, FILE *out, AVCodecContext *ctxt)
 {
 	int ret = 0;
 	int r;

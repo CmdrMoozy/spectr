@@ -30,16 +30,16 @@ typedef enum {
 	FTYPE_OGG,
 	FTYPE_AAC,
 	FTYPE_INVALID
-} ftype_t;
+} s_ftype_t;
 
 /*!
  * \brief This struct defines the various properties of an audio stream.
  */
-typedef struct audio_stat
+typedef struct s_audio_stat
 {
-	ftype_t type;
+	s_ftype_t type;
 	uint32_t bit_depth;
 	uint32_t sample_rate;
-} audio_stat_t;
+} s_audio_stat_t;
 
 #endif

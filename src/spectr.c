@@ -25,7 +25,7 @@
 #include "decoding/decode.h"
 #include "decoding/stat.h"
 
-void print_error(int);
+void s_print_error(int);
 
 int main(int argc, char *argv[])
 {
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	size_t audioSize;
 	int r;
 	FILE *pcmout;
-	audio_stat_t stat;
+	s_audio_stat_t stat;
 
 	if(argc < 2)
 	{
@@ -46,11 +46,11 @@ int main(int argc, char *argv[])
 
 	// Decode the input file we were given.
 
-	r = decode(&audio, &audioSize, argv[1]);
+	r = s_decode(&audio, &audioSize, argv[1]);
 
 	if(r != 0)
 	{
-		print_error(r);
+		s_print_error(r);
 		ret = EXIT_FAILURE;
 		goto err_after_decode;
 	}
@@ -72,11 +72,11 @@ int main(int argc, char *argv[])
 
 	// Get the properties of the input file.
 
-	r = audio_stat(&stat, argv[1]);
+	r = s_audio_stat(&stat, argv[1]);
 
 	if(r < 0)
 	{
-		print_error(r);
+		s_print_error(r);
 		ret = EXIT_FAILURE;
 		goto err_after_decode;
 	}
@@ -92,7 +92,7 @@ done:
 	return ret;
 }
 
-void print_error(int error)
+void s_print_error(int error)
 {
 	printf("Fatal error %d: %s\n", -error, strerror(-error));
 }

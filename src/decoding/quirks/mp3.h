@@ -21,6 +21,6 @@
 
 #include <stddef.h>
 
-extern int get_mp3_frame_header_offset(size_t *, const char *);
+extern int s_get_mp3_frame_header_offset(size_t *, const char *);
 
 #endif

@@ -27,7 +27,7 @@
 
 #include "util/bitwise.h"
 
-int is_mp3_frame_header(const uint8_t *, size_t);
+int s_is_mp3_frame_header(const uint8_t *, size_t);
 
 /*!
  * This function attemps to locate the first valid MP3 frame header in the
@@ -39,7 +39,7 @@ int is_mp3_frame_header(const uint8_t *, size_t);
  * \param f The path to the file to examine.
  * \return 0 on success, or an error number if no headers could be found.
  */
-int get_mp3_frame_header_offset(size_t *o, const char *f)
+int s_get_mp3_frame_header_offset(size_t *o, const char *f)
 {
 	int ret = 0;
 	int r;
@@ -98,7 +98,7 @@ int get_mp3_frame_header_offset(size_t *o, const char *f)
 		 * ID3v2 tag length (represented as a 32-bit synchsafe integer).
 		 */
 
-		off = (size_t) fromSynchsafeInt32(file, 6);
+		off = (size_t) s_from_synchsafe_int32(file, 6);
 
 		/*
 		 * The tag size field excludes the length of the header, so add
@@ -124,7 +124,7 @@ int get_mp3_frame_header_offset(size_t *o, const char *f)
 
 	// Verify that there's a valid MP3 header at the offset we found.
 
-	if(!is_mp3_frame_header(file, off))
+	if(!s_is_mp3_frame_header(file, off))
 	{
 		/*
 		 * Looks like we didn't find a valid MP3 frame header where we
@@ -140,7 +140,7 @@ int get_mp3_frame_header_offset(size_t *o, const char *f)
 
 		for(i = 0; i < (size_t) (stat.st_size - 1); ++i)
 		{
-			if(is_mp3_frame_header(file, i))
+			if(s_is_mp3_frame_header(file, i))
 			{
 				off = i;
 				break;
@@ -150,7 +150,7 @@ int get_mp3_frame_header_offset(size_t *o, const char *f)
 
 	// Verify that we eventually did find an MP3 frame header, and finish.
 
-	if(!is_mp3_frame_header(file, off))
+	if(!s_is_mp3_frame_header(file, off))
 	{
 		ret = -EINVAL;
 		goto err_after_mmap;
@@ -175,7 +175,7 @@ done:
  * \param off The offset in the buffer to examine.
  * \return Whether or not an MP3 frame header is presen at the given offset.
  */
-int is_mp3_frame_header(const uint8_t *buf, size_t off)
+int s_is_mp3_frame_header(const uint8_t *buf, size_t off)
 {
 	return (buf[off] == 0xFF) &&
 		( (buf[off + 1] == 0xFB) || (buf[off + 1] == 0xFA) );

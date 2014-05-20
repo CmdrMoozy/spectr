@@ -31,7 +31,7 @@
  * \param o The offset in the buffer to start at.
  * \return The value given as a normal 32-bit integer.
  */
-uint32_t fromSynchsafeInt32(const uint8_t *buf, size_t o)
+uint32_t s_from_synchsafe_int32(const uint8_t *buf, size_t o)
 {
 	uint32_t result = 0;
 

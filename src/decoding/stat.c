@@ -51,6 +51,16 @@ int s_audio_stat(s_audio_stat_t *stat, const char *f)
 		case FTYPE_MP3: return s_audio_stat_mp3(stat, f);
 		default: return -EINVAL;
 	}
+
+	/*
+	 * The bit depth can be different for different formats, but we
+	 * guarantee that the bit depth will be congruent to 0 modulo 8.
+	 */
+
+	if((stat->bit_depth & 7) != 0)
+		return -EINVAL;
+
+	return 0;
 }
 
 /*!

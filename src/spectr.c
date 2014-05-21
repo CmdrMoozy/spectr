@@ -23,6 +23,7 @@
 
 #include "types.h"
 #include "decoding/raw.h"
+#include "rendering/render.h"
 
 #ifdef SPECTR_DEBUG
 	#include <inttypes.h>
@@ -103,6 +104,21 @@ int main(int argc, char *argv[])
 			ret = EXIT_FAILURE;
 			goto err_after_alloc;
 		}
+	}
+
+	// Render the processed audio.
+
+#ifdef SPECTR_DEBUG
+	printf("Entering rendering loop...\n");
+#endif
+
+	r = render_loop();
+
+	if(r < 0)
+	{
+		s_print_error(r);
+		ret = EXIT_FAILURE;
+		goto err_after_alloc;
 	}
 
 err_after_alloc:

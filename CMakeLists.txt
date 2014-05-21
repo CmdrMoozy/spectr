@@ -48,6 +48,8 @@ SET(spectr_HEADERS
 
 	src/decoding/quirks/mp3.h
 
+	src/rendering/render.h
+
 	src/util/bitwise.h
 
 )
@@ -63,6 +65,8 @@ SET(spectr_SOURCES
 
 	src/decoding/quirks/mp3.c
 
+	src/rendering/render.c
+
 	src/util/bitwise.c
 
 )
@@ -70,4 +74,4 @@ SET(spectr_SOURCES
 # Build our project!
 
 ADD_EXECUTABLE(spectr ${spectr_SOURCES})
-TARGET_LINK_LIBRARIES(spectr m avformat avcodec avutil)
+TARGET_LINK_LIBRARIES(spectr m avformat avcodec avutil glfw)

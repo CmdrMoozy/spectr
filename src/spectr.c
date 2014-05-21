@@ -21,7 +21,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "spectr_types.h"
+#include "types.h"
 #include "decoding/raw.h"
 
 #ifdef SPECTR_DEBUG

@@ -39,7 +39,7 @@ INCLUDE_DIRECTORIES("src")
 
 SET(spectr_HEADERS
 
-	src/spectr_types.h
+	src/types.h
 
 	src/decoding/decode.h
 	src/decoding/ftype.h

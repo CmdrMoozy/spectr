@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_DECODE_H
-#define INCLUDE_DECODE_H
+#ifndef INCLUDE_SPECTR_DECODING_DECODE_H
+#define INCLUDE_SPECTR_DECODING_DECODE_H
 
 #include <stddef.h>
 #include <stdint.h>

@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_BITWISE_H
-#define INCLUDE_BITWISE_H
+#ifndef INCLUDE_SPECTR_UTIL_BITWISE_H
+#define INCLUDE_SPECTR_UTIL_BITWISE_H
 
 #include <stdint.h>
 #include <stddef.h>

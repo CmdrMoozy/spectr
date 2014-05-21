@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_MP3_H
-#define INCLUDE_MP3_H
+#ifndef INCLUDE_SPECTR_DECODING_QUIRKS_MP3_H
+#define INCLUDE_SPECTR_DECODING_QUIRKS_MP3_H
 
 #include <stddef.h>
 

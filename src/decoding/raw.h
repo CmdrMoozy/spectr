@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_RAW_H
-#define INCLUDE_RAW_H
+#ifndef INCLUDE_SPECTR_DECODING_RAW_H
+#define INCLUDE_SPECTR_DECODING_RAW_H
 
 #include <stdio.h>
 
-#include "spectr_types.h"
+#include "types.h"
 
 extern int s_init_raw_audio(s_raw_audio_t **);
 extern int s_free_raw_audio(s_raw_audio_t **);

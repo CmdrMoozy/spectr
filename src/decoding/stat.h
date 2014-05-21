@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_STAT_H
-#define INCLUDE_STAT_H
+#ifndef INCLUDE_SPECTR_DECODING_STAT_H
+#define INCLUDE_SPECTR_DECODING_STAT_H
 
 #include <stdint.h>
 
-#include "spectr_types.h"
+#include "types.h"
 
 extern int s_audio_stat(s_audio_stat_t *, const char *);
 

@@ -16,8 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_FTYPE_H
-#define INCLUDE_FTYPE_H
+#ifndef INCLUDE_SPECTR_DECODING_FTYPE_H
+#define INCLUDE_SPECTR_DECODING_FTYPE_H
 
 #ifdef HAVE_AV_CONFIG_H
 #undef HAVE_AV_CONFIG_H
@@ -25,7 +25,7 @@
 
 #include <libavcodec/avcodec.h>
 
-#include "spectr_types.h"
+#include "types.h"
 
 extern int s_ftype(s_ftype_t *, const char *);
 extern enum AVCodecID s_codec_for_ftype(s_ftype_t);

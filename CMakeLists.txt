@@ -13,7 +13,9 @@ SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
 
 # Define what dependencies we have.
 
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}")
 
+FIND_PACKAGE(FFMPEG REQUIRED)
 
 # Set INCLUDE and CFLAGS
 
@@ -74,4 +76,4 @@ SET(spectr_SOURCES
 # Build our project!
 
 ADD_EXECUTABLE(spectr ${spectr_SOURCES})
-TARGET_LINK_LIBRARIES(spectr m avformat avcodec avutil glfw)
+TARGET_LINK_LIBRARIES(spectr ${FFMPEG_LIBRARIES} glfw)

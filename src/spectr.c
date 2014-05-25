@@ -26,12 +26,18 @@
 #include "rendering/render.h"
 
 #ifdef SPECTR_DEBUG
+	#include <assert.h>
 	#include <inttypes.h>
 
 	#include "decoding/stat.h"
+	#include "util/math.h"
 #endif
 
 void s_print_error(int);
+
+#ifdef SPECTR_DEBUG
+	void s_test();
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -41,6 +47,10 @@ int main(int argc, char *argv[])
 
 #ifdef SPECTR_DEBUG
 	uint32_t duration;
+#endif
+
+#ifdef SPECTR_DEBUG
+	s_test();
 #endif
 
 	if(argc < 2)
@@ -131,3 +141,38 @@ void s_print_error(int error)
 {
 	printf("Fatal error %d: %s\n", -error, strerror(-error));
 }
+
+#ifdef SPECTR_DEBUG
+void s_test()
+{
+	s_raw_audio_t *test = NULL;
+	int r;
+	int32_t i;
+
+	printf("DEBUG: Testing DFT computation...\n\n");
+
+	// Populate our test audio with our test data.
+
+	r = s_init_raw_audio(&test);
+	assert(r == 0);
+
+	test->stat.type = FTYPE_MP3;
+	test->stat.bit_depth = 32;
+	test->stat.sample_rate = 44100;
+
+	test->samples_length = 21;
+	test->samples = malloc(sizeof(s_stereo_sample_t) * 21);
+	assert(test->samples != NULL);
+
+	for(i = -10; i <= 10; ++i)
+	{
+		test->samples[i + 10].l = i;
+		test->samples[i + 10].r = i;
+	}
+
+	for(i = 0; i < 21; ++i)
+		assert(s_mono_sample(test->samples[i]) == i - 10);
+
+	s_free_raw_audio(&test);
+}
+#endif

@@ -56,6 +56,7 @@ SET(spectr_HEADERS
 	src/rendering/render.h
 
 	src/util/bitwise.h
+	src/util/math.h
 
 )
 
@@ -73,6 +74,7 @@ SET(spectr_SOURCES
 	src/rendering/render.c
 
 	src/util/bitwise.c
+	src/util/math.c
 
 )
 

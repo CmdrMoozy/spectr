@@ -66,4 +66,23 @@ typedef struct s_raw_audio
 	s_stereo_sample_t *samples;
 } s_raw_audio_t;
 
+/*!
+ * \brief This struct stores a single complex value.
+ */
+typedef struct s_complex
+{
+	double r;
+	double i;
+} s_complex_t;
+
+/*!
+ * \brief This struct stores the result of a discrete Fourier transform.
+ */
+typedef struct s_dft
+{
+	size_t raw_length;
+	size_t dft_length;
+	s_complex_t *dft;
+} s_dft_t;
+
 #endif

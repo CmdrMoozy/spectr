@@ -24,6 +24,7 @@
 #include "types.h"
 #include "decoding/raw.h"
 #include "rendering/render.h"
+#include "transform/fourier.h"
 
 #ifdef SPECTR_DEBUG
 	#include <assert.h>
@@ -146,10 +147,11 @@ void s_print_error(int error)
 void s_test()
 {
 	s_raw_audio_t *test = NULL;
+	s_dft_t *dft = NULL;
 	int r;
 	int32_t i;
 
-	printf("DEBUG: Testing DFT computation...\n\n");
+	printf("DEBUG: Testing DFT computation...\n");
 
 	// Populate our test audio with our test data.
 
@@ -160,19 +162,34 @@ void s_test()
 	test->stat.bit_depth = 32;
 	test->stat.sample_rate = 44100;
 
-	test->samples_length = 21;
-	test->samples = malloc(sizeof(s_stereo_sample_t) * 21);
+	test->samples_length = 20;
+	test->samples = malloc(sizeof(s_stereo_sample_t) * 20);
 	assert(test->samples != NULL);
 
-	for(i = -10; i <= 10; ++i)
+	for(i = -10; i < 10; ++i)
 	{
 		test->samples[i + 10].l = i;
 		test->samples[i + 10].r = i;
 	}
 
-	for(i = 0; i < 21; ++i)
+	for(i = 0; i < 20; ++i)
 		assert(s_mono_sample(test->samples[i]) == i - 10);
 
+	// Compute the DFT of the test audio.
+
+	r = s_init_dft(&dft);
+	assert(r == 0);
+
+	r = s_naive_dft(dft, test);
+	assert(r == 0);
+
+	// Verify that the computation produced the correct output.
+
+
+
 	s_free_raw_audio(&test);
+	s_free_dft(&dft);
+
+	printf("DEBUG: DFT computation verified successfully!\n\n");
 }
 #endif

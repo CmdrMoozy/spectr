@@ -29,6 +29,7 @@
 #ifdef SPECTR_DEBUG
 	#include <assert.h>
 	#include <inttypes.h>
+	#include <math.h>
 
 	#include "decoding/stat.h"
 	#include "util/math.h"
@@ -148,8 +149,55 @@ void s_test()
 {
 	s_raw_audio_t *test = NULL;
 	s_dft_t *dft = NULL;
+	s_complex_t v;
 	int r;
 	int32_t i;
+
+	double expr[20] = {
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0,
+		-10.0
+	};
+
+	double expi[20] = {
+		0.0,
+		63.1375,
+		30.7768,
+		19.6261,
+		13.7638,
+		10.0,
+		7.2654,
+		5.0953,
+		3.2492,
+		1.5838,
+		0.0,
+		-1.5838,
+		-3.2492,
+		-5.0953,
+		-7.2654,
+		-10.0,
+		-13.7638,
+		-19.6261,
+		-30.7768,
+		-63.1375
+	};
 
 	printf("DEBUG: Testing DFT computation...\n");
 
@@ -185,7 +233,16 @@ void s_test()
 
 	// Verify that the computation produced the correct output.
 
+	for(i = 0; i < 20; ++i)
+	{
+		r = s_get_dft_value(&v, dft, i);
+		assert(r == 0);
 
+		printf("\tX(%d): %f + %fi\n", i, v.r, v.i);
+
+		assert(fabs(v.r - expr[i]) < 0.0001);
+		assert(fabs(v.i - expi[i]) < 0.0001);
+	}
 
 	s_free_raw_audio(&test);
 	s_free_dft(&dft);

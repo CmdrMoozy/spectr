@@ -58,6 +58,7 @@ SET(spectr_HEADERS
 	src/transform/fourier.h
 
 	src/util/bitwise.h
+	src/util/complex.h
 	src/util/math.h
 
 )
@@ -78,6 +79,7 @@ SET(spectr_SOURCES
 	src/transform/fourier.c
 
 	src/util/bitwise.c
+	src/util/complex.c
 	src/util/math.c
 
 )

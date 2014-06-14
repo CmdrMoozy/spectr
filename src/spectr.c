@@ -153,42 +153,26 @@ void s_test()
 	int r;
 	int32_t i;
 
-	double expr[16] = {
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0,
-		-8.0
+	double expr[8] = {
+		28.0,
+		-4.0,
+		-4.0,
+		-4.0,
+		-4.0,
+		-4.0,
+		-4.0,
+		-4.0
 	};
 
-	double expi[16] = {
+	double expi[8] = {
 		0.0,
-		40.2187,
-		19.3137,
-		11.9728,
-		8.0,
-		5.3454,
-		3.3137,
-		1.5913,
+		9.6569,
+		4.0,
+		1.6569,
 		0.0,
-		-1.5913,
-		-3.3137,
-		-5.3454,
-		-8.0,
-		-11.9728,
-		-19.3137,
-		-40.2187
+		-1.6569,
+		-4.0,
+		-9.6569
 	};
 
 	printf("DEBUG: Testing DFT computation...\n");
@@ -202,18 +186,18 @@ void s_test()
 	test->stat.bit_depth = 32;
 	test->stat.sample_rate = 44100;
 
-	test->samples_length = 16;
+	test->samples_length = 8;
 	test->samples = malloc(sizeof(s_stereo_sample_t) * 16);
 	assert(test->samples != NULL);
 
-	for(i = -8; i < 8; ++i)
+	for(i = 0; i < 8; ++i)
 	{
-		test->samples[i + 8].l = i;
-		test->samples[i + 8].r = i;
+		test->samples[i].l = i;
+		test->samples[i].r = i;
 	}
 
-	for(i = 0; i < 16; ++i)
-		assert(s_mono_sample(test->samples[i]) == i - 8);
+	for(i = 0; i < 8; ++i)
+		assert(s_mono_sample(test->samples[i]) == i);
 
 	// Compute the DFT of the test audio.
 
@@ -225,7 +209,7 @@ void s_test()
 
 	// Verify that the computation produced the correct output.
 
-	for(i = 0; i < 16; ++i)
+	for(i = 0; i < 8; ++i)
 	{
 		r = s_get_dft_value(&v, dft, i);
 		assert(r == 0);

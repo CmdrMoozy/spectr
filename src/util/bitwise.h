@@ -24,4 +24,7 @@
 
 extern uint32_t s_from_synchsafe_int32(const uint8_t *, size_t);
 
+extern uint64_t s_rmo_off(uint64_t);
+extern int s_is_pow_2(uint64_t);
+
 #endif

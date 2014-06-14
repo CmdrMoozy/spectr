@@ -42,3 +42,26 @@ uint32_t s_from_synchsafe_int32(const uint8_t *buf, size_t o)
 
 	return result;
 }
+
+/*!
+ * This function turns the right-most one bit of the given value off, returning
+ * the result.
+ *
+ * \param v The value to manipulate.
+ * \return The given value, with the right-most one bit turned off.
+ */
+uint64_t s_rmo_off(uint64_t v)
+{
+	return (v & (v - 1));
+}
+
+/*!
+ * This function returns whether or not the given value is a power of two.
+ *
+ * \param v The value to examine.
+ * \return Whether or not v is a power of two.
+ */
+int s_is_pow_2(uint64_t v)
+{
+	return (v && !s_rmo_off(v));
+}

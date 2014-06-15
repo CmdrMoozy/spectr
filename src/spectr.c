@@ -149,6 +149,7 @@ void s_test()
 {
 	s_raw_audio_t *test = NULL;
 	s_dft_t *dft = NULL;
+	s_dft_t *fft = NULL;
 	s_complex_t v;
 	int r;
 	int32_t i;
@@ -220,9 +221,30 @@ void s_test()
 		assert(fabs(v.i - expi[i]) < 0.0001);
 	}
 
-	s_free_raw_audio(&test);
-	s_free_dft(&dft);
+	// Compute the DFT again using our naive FFT algorithm.
+
+	r = s_init_dft(&fft);
+	assert(r == 0);
+
+	r = s_naive_fft(fft, test);
+	assert(r == 0);
+
+	// Verify that the naive FFT algorithm got the same results.
+
+	printf("\n");
+
+	for(i = 0; i < 8; ++i)
+	{
+		printf("\tX(%d): %f + %fi\n", i, fft->dft[i].r, fft->dft[i].i);
+
+		assert(fabs(fft->dft[i].r - expr[i]) < 0.0001);
+		assert(fabs(fft->dft[i].i - expi[i]) < 0.0001);
+	}
 
 	printf("DEBUG: DFT computation verified successfully!\n\n");
+
+	s_free_raw_audio(&test);
+	s_free_dft(&dft);
+	s_free_dft(&fft);
 }
 #endif

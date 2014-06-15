@@ -26,10 +26,13 @@
 extern int s_init_dft(s_dft_t **);
 extern int s_free_dft(s_dft_t **);
 
+extern int s_copy_dft(s_dft_t **, const s_dft_t *);
+
 extern int s_get_dft_value(s_complex_t *, const s_dft_t *, size_t);
 
 #ifdef SPECTR_DEBUG
 extern int s_naive_dft(s_dft_t *, const s_raw_audio_t *);
+extern int s_naive_fft(s_dft_t *, const s_raw_audio_t *);
 #endif
 
 #endif

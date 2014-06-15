@@ -80,8 +80,7 @@ typedef struct s_complex
  */
 typedef struct s_dft
 {
-	size_t raw_length;
-	size_t dft_length;
+	size_t length;
 	s_complex_t *dft;
 } s_dft_t;
 

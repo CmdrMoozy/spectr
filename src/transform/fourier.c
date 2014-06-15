@@ -46,7 +46,7 @@ int s_init_dft(s_dft_t **dft)
 	if(dft == NULL)
 		return -ENOMEM;
 
-	(*dft)->dft_length = 0;
+	(*dft)->length = 0;
 	(*dft)->dft = NULL;
 
 	return 0;
@@ -105,12 +105,11 @@ int s_copy_dft(s_dft_t **dst, const s_dft_t *src)
 
 	// Copy the length values from the original.
 
-	(*dst)->raw_length = src->raw_length;
-	(*dst)->dft_length = src->dft_length;
+	(*dst)->length = src->length;
 
 	// Allocate memory for the list of DFT values.
 
-	(*dst)->dft = malloc(sizeof(s_complex_t) * src->dft_length);
+	(*dst)->dft = malloc(sizeof(s_complex_t) * src->length);
 
 	if((*dst)->dft == NULL)
 	{
@@ -120,7 +119,7 @@ int s_copy_dft(s_dft_t **dst, const s_dft_t *src)
 
 	// Copy the DFT values from the original.
 
-	memcpy((*dst)->dft, src->dft, sizeof(s_complex_t) * src->dft_length);
+	memcpy((*dst)->dft, src->dft, sizeof(s_complex_t) * src->length);
 
 	// We're done!
 
@@ -162,17 +161,16 @@ int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 	if(r < 0)
 		return r;
 
-	(*dft)->raw_length = raw->samples_length;
-	(*dft)->dft_length = raw->samples_length;
+	(*dft)->length = raw->samples_length;
 
-	(*dft)->dft = malloc(sizeof(s_complex_t) * (*dft)->dft_length);
+	(*dft)->dft = malloc(sizeof(s_complex_t) * (*dft)->length);
 
 	if((*dft)->dft == NULL)
 		return -ENOMEM;
 
 	// Initialize all of the values in the DFT to 0.
 
-	for(i = 0; i < (*dft)->dft_length; ++i)
+	for(i = 0; i < (*dft)->length; ++i)
 	{
 		(*dft)->dft[i].r = 0.0;
 		(*dft)->dft[i].i = 0.0;
@@ -180,7 +178,7 @@ int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 
 	// Compute the DFT using our FFT algorithm.
 
-	r = s_fft_r(*dft, raw, 1, 0, (*dft)->dft_length);
+	r = s_fft_r(*dft, raw, 1, 0, (*dft)->length);
 
 	if(r < 0)
 	{

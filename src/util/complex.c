@@ -101,3 +101,33 @@ void s_cexp(s_complex_t *r, double x)
 	r->r = cos(x);
 	r->i = sin(x);
 }
+
+/*!
+ * This is a convenience function which prints the given complex value to
+ * standard output, using s_cfprintf.
+ *
+ * \param v The value to print.
+ * \return The number of characters printed, or a negative value on error.
+ */
+int s_cprintf(const s_complex_t *v)
+{
+	return s_cfprintf(stdout, v);
+}
+
+/*!
+ * This function prints the given complex value to the given stream, as a
+ * human-readable string.
+ *
+ * \param s The stream to write the rendered value to.
+ * \param v The value to print.
+ * \return The number of characters printed, or a negative value on error.
+ */
+int s_cfprintf(FILE *s, const s_complex_t *v)
+{
+	char sign = '+';
+
+	if(v->i < 0.0)
+		sign = '-';
+
+	return fprintf(s, "(%f%c%fj)", v->r, sign, fabs(v->i));
+}

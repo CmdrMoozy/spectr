@@ -21,6 +21,9 @@
 
 #include "types.h"
 
+#include <stdio.h>
+#include <stddef.h>
+
 extern void s_cadd(s_complex_t *, const s_complex_t *, const s_complex_t *);
 extern void s_csub(s_complex_t *, const s_complex_t *, const s_complex_t *);
 extern void s_cmul(s_complex_t *, const s_complex_t *, const s_complex_t *);
@@ -28,5 +31,8 @@ extern void s_cmul(s_complex_t *, const s_complex_t *, const s_complex_t *);
 extern void s_cmul_r(s_complex_t *, const s_complex_t *, double);
 
 extern void s_cexp(s_complex_t *, double x);
+
+extern int s_cprintf(const s_complex_t *);
+extern int s_cfprintf(FILE *, const s_complex_t *);
 
 #endif

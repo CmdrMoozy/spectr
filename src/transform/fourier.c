@@ -78,6 +78,48 @@ int s_free_dft(s_dft_t **dft)
 }
 
 /*!
+ * This is a utility function which initializes the contents of the given DFT
+ * structure to be able to store a result of the given length.
+ *
+ * \param dft The DFT whose contents will be initialized.
+ * \param length The length of the result that is to be stored.
+ * \return 0 on success, or an error number otherwise.
+ */
+int s_init_dft_result(s_dft_t *dft, size_t length)
+{
+	size_t i;
+
+	// Free the existing result, if any.
+
+	if(dft->dft != NULL)
+	{
+		free(dft->dft);
+		dft->dft = NULL;
+	}
+
+	// Allocate memory for the new result.
+
+	dft->length = length;
+
+	dft->dft = malloc(sizeof(s_complex_t) * dft->length);
+
+	if(dft->dft == NULL)
+		return -ENOMEM;
+
+	// Initialize the result values to 0.
+
+	for(i = 0; i < dft->length; ++i)
+	{
+		dft->dft[i].r = 0.0;
+		dft->dft[i].i = 0.0;
+	}
+
+	// Done.
+
+	return 0;
+}
+
+/*!
  * This is a utility function which creates a duplicate of an existing s_dft_t.
  *
  * The given destination will be freed (if it was previously initialized), and
@@ -142,7 +184,6 @@ int s_copy_dft(s_dft_t **dst, const s_dft_t *src)
 int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 {
 	int r;
-	size_t i;
 
 	// The length of the input must be a power of two for the FFT.
 
@@ -161,20 +202,7 @@ int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 	if(r < 0)
 		return r;
 
-	(*dft)->length = raw->samples_length;
-
-	(*dft)->dft = malloc(sizeof(s_complex_t) * (*dft)->length);
-
-	if((*dft)->dft == NULL)
-		return -ENOMEM;
-
-	// Initialize all of the values in the DFT to 0.
-
-	for(i = 0; i < (*dft)->length; ++i)
-	{
-		(*dft)->dft[i].r = 0.0;
-		(*dft)->dft[i].i = 0.0;
-	}
+	s_init_dft_result(*dft, raw->samples_length);
 
 	// Compute the DFT using our FFT algorithm.
 

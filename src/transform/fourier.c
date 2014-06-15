@@ -23,17 +23,11 @@
 #include <math.h>
 #include <string.h>
 
-#ifdef SPECTR_DEBUG
-	#include <assert.h>
+#include "util/math.h"
+#include "util/bitwise.h"
+#include "util/complex.h"
 
-	#include "util/math.h"
-	#include "util/bitwise.h"
-	#include "util/complex.h"
-#endif
-
-#ifdef SPECTR_DEBUG
-int s_naive_fft_r(s_dft_t *, const s_raw_audio_t *, size_t, size_t, size_t);
-#endif
+int s_fft_r(s_dft_t *, const s_raw_audio_t *, size_t, size_t, size_t);
 
 /*!
  * This function initializes (allocates) a s_dft_t variable. If the pointer is
@@ -134,132 +128,21 @@ int s_copy_dft(s_dft_t **dst, const s_dft_t *src)
 }
 
 /*!
- * This function returns the value X(n) of the given DFT output. Note that,
- * because we compute DFT's from real inputs, the DFT has the following
- * symmetry condition:
- *
- *     X(k) = X(N-k)*, k = 0, 1, ..., N-1
- *
- * Where * is the complex conjugate, i.e.:
- *
- *     (a + bi)* = a - bi
- *
- * This function takes advantage of this symmetry automatically, returning the
- * appropriate value, even though our DFT stuctures only store the first
- * N/2 + 1 values explicitly.
- *
- * \param v The complex variable whose value will be set.
- * \param dft The DFT result to get the value from.
- * \param n The index of the value to get.
- * \return 0 on success, or an error number otherwise.
- */
-int s_get_dft_value(s_complex_t *v, const s_dft_t *dft, size_t n)
-{
-	size_t src;
-	double conj = 1.0;
-
-	if(dft->dft_length == 0)
-		return -EINVAL;
-
-	if(dft->dft_length != (dft->raw_length >> 1) + 1)
-		return -EINVAL;
-
-	if(n > dft->raw_length)
-		return -EINVAL;
-
-	src = n;
-
-	if(src >= dft->dft_length)
-	{
-		src = dft->raw_length - src;
-		conj = -1.0;
-	}
-
-	v->r = dft->dft[src].r;
-	v->i = dft->dft[src].i;
-	v->i *= conj;
-
-	return 0;
-}
-
-#ifdef SPECTR_DEBUG
-/*!
- * This function computes the discrete Fourier transform of the given raw audio
- * data, using the most basic, naive implementation possible. This is primarily
- * useful for testing purposes (e.g., to validate the computations of more
- * efficient, more complex functions).
- *
- * \param dft The pre-initialized DFT structure to store the result in.
- * \param raw The raw audio data to compute the DFT of.
- * \return 0 on success, or an error number otherwise.
- */
-int s_naive_dft(s_dft_t *dft, const s_raw_audio_t *raw)
-{
-	size_t n;
-	size_t k;
-	size_t N;
-	double exp;
-	s_complex_t v;
-
-	// We require an even number of input samples.
-
-	if(raw->samples_length & 1)
-		return -EINVAL;
-
-	// Allocate space for the output values.
-
-	if(dft->dft != NULL)
-	{
-		free(dft->dft);
-		dft->dft = NULL;
-	}
-
-	dft->raw_length = raw->samples_length;
-	dft->dft_length = (raw->samples_length >> 1) + 1;
-
-	dft->dft = malloc(sizeof(s_complex_t) * dft->dft_length);
-
-	if(dft->dft == NULL)
-		return -ENOMEM;
-
-	// Compute the first N/2 + 1 members of the DFT.
-
-	N = raw->samples_length;
-
-	for(k = 0; k <= (N >> 1); ++k)
-	{
-		dft->dft[k].r = 0.0;
-		dft->dft[k].i = 0.0;
-
-		for(n = 0; n < N; ++n)
-		{
-			exp = - 2.0 * M_PI * ((double) k) *
-				((double) n);
-			exp /= (double) N;
-
-			s_cexp(&v, exp);
-			s_cmul_r(&v, &v,
-				(double) s_mono_sample(raw->samples[n]));
-
-			dft->dft[k].r += v.r;
-			dft->dft[k].i += v.i;
-		}
-	}
-
-	return 0;
-}
-
-/*!
  * This function computes the DFT of the given raw audio data using a classic
  * fast Fourier transform algorithm, assuming that the length of the raw audio
  * data is a power of two.
+ *
+ * Note that this function will free any existing contents in the given result
+ * destination, and will allocate memory for the new result. It is up to our
+ * caller to free that memory later.
  *
  * \param dft The s_dft_t to store the result in.
  * \param raw The raw audio data to process.
  * \return 0 on success, or an error number otherwise.
  */
-int s_naive_fft(s_dft_t *dft, const s_raw_audio_t *raw)
+int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 {
+	int r;
 	size_t i;
 
 	// The length of the input must be a power of two for the FFT.
@@ -269,31 +152,43 @@ int s_naive_fft(s_dft_t *dft, const s_raw_audio_t *raw)
 
 	// Allocate space for the output values.
 
-	if(dft->dft != NULL)
-	{
-		free(dft->dft);
-		dft->dft = NULL;
-	}
+	r = s_free_dft(dft);
 
-	dft->raw_length = raw->samples_length;
-	dft->dft_length = raw->samples_length;
+	if(r < 0)
+		return r;
 
-	dft->dft = malloc(sizeof(s_complex_t) * dft->dft_length);
+	r = s_init_dft(dft);
 
-	if(dft->dft == NULL)
+	if(r < 0)
+		return r;
+
+	(*dft)->raw_length = raw->samples_length;
+	(*dft)->dft_length = raw->samples_length;
+
+	(*dft)->dft = malloc(sizeof(s_complex_t) * (*dft)->dft_length);
+
+	if((*dft)->dft == NULL)
 		return -ENOMEM;
 
 	// Initialize all of the values in the DFT to 0.
 
-	for(i = 0; i < dft->dft_length; ++i)
+	for(i = 0; i < (*dft)->dft_length; ++i)
 	{
-		dft->dft[i].r = 0.0;
-		dft->dft[i].i = 0.0;
+		(*dft)->dft[i].r = 0.0;
+		(*dft)->dft[i].i = 0.0;
 	}
 
 	// Compute the DFT using our FFT algorithm.
 
-	return s_naive_fft_r(dft, raw, 1, 0, dft->dft_length);
+	r = s_fft_r(*dft, raw, 1, 0, (*dft)->dft_length);
+
+	if(r < 0)
+	{
+		s_free_dft(dft);
+		return r;
+	}
+
+	return 0;
 }
 
 /*!
@@ -313,7 +208,7 @@ int s_naive_fft(s_dft_t *dft, const s_raw_audio_t *raw)
  * \param N the length of the list being iterated over.
  * \return 0 on success, or an error number otherwise.
  */
-int s_naive_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
+int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 	size_t s, size_t o, size_t bign)
 {
 	int r;
@@ -362,14 +257,14 @@ int s_naive_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 
 	// Compute the DFT of the even elements.
 
-	r = s_naive_fft_r(dft, raw, es, eo, bign >> 1);
+	r = s_fft_r(dft, raw, es, eo, bign >> 1);
 
 	if(r < 0)
 		return r;
 
 	// Compute the DFT of the odd elements.
 
-	r = s_naive_fft_r(dft, raw, os, oo, bign >> 1);
+	r = s_fft_r(dft, raw, os, oo, bign >> 1);
 
 	if(r < 0)
 		return r;
@@ -441,4 +336,3 @@ int s_naive_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 
 	return 0;
 }
-#endif

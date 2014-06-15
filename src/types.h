@@ -84,4 +84,16 @@ typedef struct s_dft
 	s_complex_t *dft;
 } s_dft_t;
 
+/*!
+ * \brief This struct stores the result of a short-time Fourier Transform.
+ */
+typedef struct s_stft
+{
+	size_t raw_length;
+	s_audio_stat_t raw_stat;
+
+	size_t length;
+	s_dft_t *dfts;
+} s_stft_t;
+
 #endif

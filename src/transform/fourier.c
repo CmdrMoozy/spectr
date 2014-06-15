@@ -334,3 +334,57 @@ int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 
 	return 0;
 }
+
+/*!
+ * This function initializes (allocates) a s_stft_t variable. If the pointer
+ * is non-NULL, we will not allocate a new value on top of it.
+ *
+ * \param dft The s_stft_t to allocate.
+ * \return 0 on success, or an error number otherwise.
+ */
+int s_init_stft(s_stft_t **stft)
+{
+	if(*stft != NULL)
+		return -EINVAL;
+
+	*stft = malloc(sizeof(s_stft_t));
+
+	if(*stft == NULL)
+		return -ENOMEM;
+
+	(*stft)->raw_length = 0;
+
+	(*stft)->raw_stat.type = FTYPE_INVALID;
+	(*stft)->raw_stat.bit_depth = 0;
+	(*stft)->raw_stat.sample_rate = 0;
+
+	(*stft)->length = 0;
+	(*stft)->dfts = NULL;
+
+	return 0;
+}
+
+/*!
+ * This function frees the given s_stft_t structure, including the list of DFT
+ * values it contains (if any). Note that this function is safe against
+ * double-frees.
+ *
+ * \param r The s_stft_t to free.
+ * \return 0 on success, or an error number otherwise.
+ */
+int s_free_stft(s_stft_t **stft)
+{
+	if(*stft == NULL)
+		return 0;
+
+	if((*stft)->dfts != NULL)
+	{
+		free((*stft)->dfts);
+		(*stft)->dfts = NULL;
+	}
+
+	free(*stft);
+	*stft = NULL;
+
+	return 0;
+}

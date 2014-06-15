@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 	printf("Entering rendering loop...\n");
 #endif
 
-	r = render_loop();
+	r = s_render_loop();
 
 	if(r < 0)
 	{

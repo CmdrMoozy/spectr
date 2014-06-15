@@ -30,7 +30,7 @@
  *
  * \return 0 on success, or an error number if something goes wrong.
  */
-int render_loop()
+int s_render_loop()
 {
 	GLFWwindow *window;
 

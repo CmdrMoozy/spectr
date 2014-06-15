@@ -43,7 +43,7 @@ int s_init_dft(s_dft_t **dft)
 
 	*dft = malloc(sizeof(s_dft_t));
 
-	if(dft == NULL)
+	if(*dft == NULL)
 		return -ENOMEM;
 
 	(*dft)->length = 0;

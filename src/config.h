@@ -16,46 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "render.h"
+#ifndef INCLUDE_SPECTR_CONFIG_H
+#define INCLUDE_SPECTR_CONFIG_H
 
-#include <errno.h>
-
-#include <GLFW/glfw3.h>
-
-#include "config.h"
-
-/*!
- * This function creates a new OpenGL window and renders our output inside it.
- *
- * \return 0 on success, or an error number if something goes wrong.
+/*
+ * This is the window size which will be used for our application's STFT
+ * computations. Given a typical input signal of 44,100 Hz, this is the largest
+ * number which is a power of two which provides at least one DFT result per
+ * each pixel in a 800-pixel-wide window.
  */
-int s_render_loop()
-{
-	GLFWwindow *window;
+#define S_WINDOW_SIZE 16384
 
-	if(!glfwInit())
-		return -EINVAL;
+/*
+ * This is the size of the window we'll plot our result in.
+ */
+#define S_WINDOW_W 800
+#define S_WINDOW_H 250
 
-	window = glfwCreateWindow(S_WINDOW_W, S_WINDOW_H,
-		"Spectr", NULL, NULL);
-
-	if(!window)
-	{
-		glfwTerminate();
-		return -EINVAL;
-	}
-
-	glfwMakeContextCurrent(window);
-
-	while(!glfwWindowShouldClose(window))
-	{
-
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
-
-	glfwTerminate();
-
-	return 0;
-}
+#endif

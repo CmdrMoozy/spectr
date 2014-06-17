@@ -58,12 +58,11 @@ int s_init_dft(s_dft_t **dft)
  * double-frees.
  *
  * \param r The s_dft_t to free.
- * \return 0 on success, or an error number otherwise.
  */
-int s_free_dft(s_dft_t **dft)
+void s_free_dft(s_dft_t **dft)
 {
 	if(*dft == NULL)
-		return 0;
+		return;
 
 	if((*dft)->dft != NULL)
 	{
@@ -73,8 +72,6 @@ int s_free_dft(s_dft_t **dft)
 
 	free(*dft);
 	*dft = NULL;
-
-	return 0;
 }
 
 /*!
@@ -135,10 +132,7 @@ int s_copy_dft(s_dft_t **dst, const s_dft_t *src)
 
 	// Make sure the destination is a newly-initialized s_dft_t.
 
-	r = s_free_dft(dst);
-
-	if(r < 0)
-		return r;
+	s_free_dft(dst);
 
 	r = s_init_dft(dst);
 
@@ -192,10 +186,7 @@ int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 
 	// Allocate space for the output values.
 
-	r = s_free_dft(dft);
-
-	if(r < 0)
-		return r;
+	s_free_dft(dft);
 
 	r = s_init_dft(dft);
 

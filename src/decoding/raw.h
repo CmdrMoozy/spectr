@@ -24,7 +24,7 @@
 #include "types.h"
 
 extern int s_init_raw_audio(s_raw_audio_t **);
-extern int s_free_raw_audio(s_raw_audio_t **);
+extern void s_free_raw_audio(s_raw_audio_t **);
 
 extern int s_decode_raw_audio(s_raw_audio_t *, const char *);
 

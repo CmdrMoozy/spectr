@@ -60,12 +60,11 @@ int s_init_raw_audio(s_raw_audio_t **r)
  * double-frees.
  *
  * \param r The s_raw_audio_t to free.
- * \return 0 on success, or an error number otherwise.
  */
-int s_free_raw_audio(s_raw_audio_t **r)
+void s_free_raw_audio(s_raw_audio_t **r)
 {
 	if(*r == NULL)
-		return 0;
+		return;
 
 	if((*r)->samples != NULL)
 	{
@@ -75,8 +74,6 @@ int s_free_raw_audio(s_raw_audio_t **r)
 
 	free(*r);
 	*r = NULL;
-
-	return 0;
 }
 
 /*!

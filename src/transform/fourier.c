@@ -23,6 +23,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "decoding/raw.h"
 #include "util/math.h"
 #include "util/bitwise.h"
 #include "util/complex.h"
@@ -362,6 +363,8 @@ void s_free_stft_result(s_stft_t *stft)
 int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 {
 	int r;
+	size_t i;
+	s_raw_audio_t *wraw = NULL;
 
 	// Allocate space for the result.
 
@@ -379,6 +382,31 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 		s_free_stft(stft);
 		return r;
 	}
+
+	// Compute the DFT of each individual window.
+
+	for(i = 0; i < (*stft)->length; ++i)
+	{
+		// Copy the segment we'll be transforming.
+
+		r = s_copy_raw_audio_window(&wraw, raw, i * w, w);
+
+		if(r < 0)
+		{
+			s_free_stft(stft);
+			return r;
+		}
+
+		// Compute the DFT of this raw audio window.
+
+
+
+		// Free this raw audio window.
+
+		s_free_raw_audio(&wraw);
+	}
+
+	// Done!
 
 	return 0;
 }

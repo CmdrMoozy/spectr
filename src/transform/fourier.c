@@ -218,6 +218,144 @@ int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 }
 
 /*!
+ * This function initializes (allocates) a s_stft_t variable. If the pointer
+ * is non-NULL, we will not allocate a new value on top of it.
+ *
+ * \param dft The s_stft_t to allocate.
+ * \return 0 on success, or an error number otherwise.
+ */
+int s_init_stft(s_stft_t **stft)
+{
+	if(*stft != NULL)
+		return -EINVAL;
+
+	*stft = malloc(sizeof(s_stft_t));
+
+	if(*stft == NULL)
+		return -ENOMEM;
+
+	(*stft)->raw_length = 0;
+
+	(*stft)->raw_stat.type = FTYPE_INVALID;
+	(*stft)->raw_stat.bit_depth = 0;
+	(*stft)->raw_stat.sample_rate = 0;
+
+	(*stft)->length = 0;
+	(*stft)->dfts = NULL;
+
+	return 0;
+}
+
+/*!
+ * This function frees the given s_stft_t structure, including the list of DFT
+ * values it contains (if any). Note that this function is safe against
+ * double-frees.
+ *
+ * \param r The s_stft_t to free.
+ */
+void s_free_stft(s_stft_t **stft)
+{
+	if(*stft == NULL)
+		return;
+
+	s_free_stft_result(*stft);
+
+	free(*stft);
+	*stft = NULL;
+}
+
+/*!
+ * This is a utility function which initializes the contents of the given STFT
+ * structure to be able to store a result computed from the given raw audio
+ * structure, and using the given window size.
+ *
+ * \param stft The STFT whose contents will be initialized.
+ * \param raw The raw audio structure to be processed.
+ * \param w The size of the STFT window. Must be a power of two.
+ * \return 0 on success, or an error number otherwise.
+ */
+int s_init_stft_result(s_stft_t *stft, const s_raw_audio_t *raw, size_t w)
+{
+	int r;
+	size_t i;
+	s_dft_t **dft;
+
+	// The length of the window must be a power of two for the FFT.
+
+	if(!s_is_pow_2(w))
+		return -EINVAL;
+
+	// Allocate memory for the list of DFT results.
+
+	stft->raw_length = raw->samples_length;
+	stft->raw_stat = raw->stat;
+
+	stft->length = raw->samples_length / w;
+
+	stft->dfts = malloc(sizeof(s_dft_t *) * stft->length);
+
+	if(stft->dfts == NULL)
+		return -ENOMEM;
+
+	for(i = 0; i < stft->length; ++i)
+		stft->dfts[i] = NULL;
+
+	// Allocate each of the DFT result structures.
+
+	for(i = 0; i < stft->length; ++i)
+	{
+		dft = &(stft->dfts[i]);
+
+		r = s_init_dft(dft);
+
+		if(r < 0)
+		{
+			s_free_stft_result(stft);
+			return r;
+		}
+
+		r = s_init_dft_result(*dft, w);
+
+		if(r < 0)
+		{
+			s_free_stft_result(stft);
+			return r;
+		}
+	}
+
+	return 0;
+}
+
+/*!
+ * This is a utility function which frees memory allocated for the contents of
+ * the given STFT structure.
+ *
+ * \param stft The STFT whose contents were previously initialized.
+ */
+void s_free_stft_result(s_stft_t *stft)
+{
+	size_t i;
+
+	if(stft->dfts != NULL)
+	{
+		for(i = 0; i < stft->length; ++i)
+			if(stft->dfts[i] != NULL)
+				s_free_dft(&(stft->dfts[i]));
+
+		free(stft->dfts);
+		stft->dfts = NULL;
+	}
+
+	stft->raw_length = 0;
+
+	stft->raw_stat.type = FTYPE_INVALID;
+	stft->raw_stat.bit_depth = 0;
+	stft->raw_stat.sample_rate = 0;
+
+	stft->length = 0;
+}
+
+/*!
  * This function uses the Danielson-Lanczos lemma to compute the Fourier
  * transform of the even and odd sections of the set of items in the list whose
  * index is denoted by s * k + o, where s and o are the given stride and
@@ -359,60 +497,6 @@ int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 	// Clean up our copy, and we're done.
 
 	s_free_dft(&dftprime);
-
-	return 0;
-}
-
-/*!
- * This function initializes (allocates) a s_stft_t variable. If the pointer
- * is non-NULL, we will not allocate a new value on top of it.
- *
- * \param dft The s_stft_t to allocate.
- * \return 0 on success, or an error number otherwise.
- */
-int s_init_stft(s_stft_t **stft)
-{
-	if(*stft != NULL)
-		return -EINVAL;
-
-	*stft = malloc(sizeof(s_stft_t));
-
-	if(*stft == NULL)
-		return -ENOMEM;
-
-	(*stft)->raw_length = 0;
-
-	(*stft)->raw_stat.type = FTYPE_INVALID;
-	(*stft)->raw_stat.bit_depth = 0;
-	(*stft)->raw_stat.sample_rate = 0;
-
-	(*stft)->length = 0;
-	(*stft)->dfts = NULL;
-
-	return 0;
-}
-
-/*!
- * This function frees the given s_stft_t structure, including the list of DFT
- * values it contains (if any). Note that this function is safe against
- * double-frees.
- *
- * \param r The s_stft_t to free.
- * \return 0 on success, or an error number otherwise.
- */
-int s_free_stft(s_stft_t **stft)
-{
-	if(*stft == NULL)
-		return 0;
-
-	if((*stft)->dfts != NULL)
-	{
-		free((*stft)->dfts);
-		(*stft)->dfts = NULL;
-	}
-
-	free(*stft);
-	*stft = NULL;
 
 	return 0;
 }

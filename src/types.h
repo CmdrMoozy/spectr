@@ -93,7 +93,7 @@ typedef struct s_stft
 	s_audio_stat_t raw_stat;
 
 	size_t length;
-	s_dft_t *dfts;
+	s_dft_t **dfts;
 } s_stft_t;
 
 #endif

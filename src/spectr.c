@@ -21,6 +21,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "config.h"
 #include "types.h"
 #include "decoding/raw.h"
 #include "rendering/render.h"
@@ -46,6 +47,7 @@ int main(int argc, char *argv[])
 	int ret = EXIT_SUCCESS;
 	int r;
 	s_raw_audio_t *audio = NULL;
+	s_stft_t *stft = NULL;
 
 #ifdef SPECTR_DEBUG
 	uint32_t duration;
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
 	{
 		s_print_error(r);
 		ret = EXIT_FAILURE;
-		goto err_after_alloc;
+		goto err_after_raw_alloc;
 	}
 
 #ifdef SPECTR_DEBUG
@@ -103,7 +105,7 @@ int main(int argc, char *argv[])
 		{
 			s_print_error(-errno);
 			ret = EXIT_FAILURE;
-			goto err_after_alloc;
+			goto err_after_raw_alloc;
 		}
 
 		r = s_write_raw_audio(out, audio);
@@ -114,9 +116,22 @@ int main(int argc, char *argv[])
 		{
 			s_print_error(r);
 			ret = EXIT_FAILURE;
-			goto err_after_alloc;
+			goto err_after_raw_alloc;
 		}
 	}
+
+	// Compute the STFT of the raw audio input.
+
+	r = s_stft(&stft, audio, S_WINDOW_SIZE);
+
+	if(r < 0)
+	{
+		s_print_error(r);
+		ret = EXIT_FAILURE;
+		goto err_after_raw_alloc;
+	}
+
+
 
 	// Render the processed audio.
 
@@ -130,10 +145,12 @@ int main(int argc, char *argv[])
 	{
 		s_print_error(r);
 		ret = EXIT_FAILURE;
-		goto err_after_alloc;
+		goto err_after_stft_alloc;
 	}
 
-err_after_alloc:
+err_after_stft_alloc:
+	s_free_stft(&stft);
+err_after_raw_alloc:
 	s_free_raw_audio(&audio);
 done:
 	return ret;

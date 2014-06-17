@@ -347,6 +347,43 @@ void s_free_stft_result(s_stft_t *stft)
 }
 
 /*!
+ * This function computes a set of short-time Fourier transforms of the given
+ * raw signal, using the given window function size.
+ *
+ * Note that this function will free any existing contents in the given result
+ * destination, and will allocate memory for the new result. It is up to our
+ * caller to free that memory later.
+ *
+ * \param stft This will receive the result of our computations.
+ * \param raw The raw audio signal to process.
+ * \param w The window function size. Must be a power of two.
+ * \return 0 on success, or an error number otherwise.
+ */
+int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
+{
+	int r;
+
+	// Allocate space for the result.
+
+	s_free_stft(stft);
+
+	r = s_init_stft(stft);
+
+	if(r < 0)
+		return r;
+
+	r = s_init_stft_result(*stft, raw, w);
+
+	if(r < 0)
+	{
+		s_free_stft(stft);
+		return r;
+	}
+
+	return 0;
+}
+
+/*!
  * This function uses the Danielson-Lanczos lemma to compute the Fourier
  * transform of the even and odd sections of the set of items in the list whose
  * index is denoted by s * k + o, where s and o are the given stride and

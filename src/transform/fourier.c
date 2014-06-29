@@ -23,12 +23,16 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef SPECTR_DEBUG
+	#include <sys/time.h>
+#endif
+
 #include "decoding/raw.h"
 #include "util/math.h"
 #include "util/bitwise.h"
 #include "util/complex.h"
 
-int s_fft_r(s_dft_t *, const s_raw_audio_t *, size_t, size_t, size_t);
+int s_fft_r(s_dft_t *, size_t, const s_raw_audio_t *, size_t, size_t, size_t);
 
 /*!
  * This function initializes (allocates) a s_dft_t variable. If the pointer is
@@ -164,9 +168,9 @@ int s_copy_dft(s_dft_t **dst, const s_dft_t *src)
 }
 
 /*!
- * This function computes the DFT of the given raw audio data using a classic
- * fast Fourier transform algorithm, assuming that the length of the raw audio
- * data is a power of two.
+ * This function computes the DFT of a part of the given raw audio data using a
+ * classic fast Fourier transform algorithm, assuming that the length of the
+ * raw audio data is a power of two.
  *
  * Note that this function will free any existing contents in the given result
  * destination, and will allocate memory for the new result. It is up to our
@@ -174,15 +178,17 @@ int s_copy_dft(s_dft_t **dst, const s_dft_t *src)
  *
  * \param dft The s_dft_t to store the result in.
  * \param raw The raw audio data to process.
+ * \param o The offset to start processing the raw audio data from.
+ * \param l The length of the raw audio data to process.
  * \return 0 on success, or an error number otherwise.
  */
-int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
+int s_fft_part(s_dft_t **dft, const s_raw_audio_t *raw, size_t o, size_t l)
 {
 	int r;
 
 	// The length of the input must be a power of two for the FFT.
 
-	if(!s_is_pow_2(raw->samples_length))
+	if(!s_is_pow_2(l))
 		return -EINVAL;
 
 	// Allocate space for the output values.
@@ -194,11 +200,11 @@ int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 	if(r < 0)
 		return r;
 
-	s_init_dft_result(*dft, raw->samples_length);
+	s_init_dft_result(*dft, l);
 
 	// Compute the DFT using our FFT algorithm.
 
-	r = s_fft_r(*dft, raw, 1, 0, (*dft)->length);
+	r = s_fft_r(*dft, o, raw, 1, o, l);
 
 	if(r < 0)
 	{
@@ -207,6 +213,20 @@ int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 	}
 
 	return 0;
+}
+
+/*!
+ * This function computes the DFT of the given raw audio data. This is a
+ * convenience function, and it simply calls s_fft_part with an offset of 0,
+ * and the total length of the given raw audio data.
+ *
+ * \param dft The s_dft_t to store the result in.
+ * \param raw The raw audio data to process.
+ * \return 0 on success, or an error number otherwise.
+ */
+int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
+{
+	return s_fft_part(dft, raw, 0, raw->samples_length);
 }
 
 /*!
@@ -364,7 +384,12 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 {
 	int r;
 	size_t i;
-	s_raw_audio_t *wraw = NULL;
+
+#ifdef SPECTR_DEBUG
+	struct timeval prof;
+	double elapsed;
+	double percent;
+#endif
 
 	// Allocate space for the result.
 
@@ -387,9 +412,19 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 
 	for(i = 0; i < (*stft)->length; ++i)
 	{
-		// Copy the segment we'll be transforming.
+#ifdef SPECTR_DEBUG
+	percent = (1.0 / ((double) (*stft)->length)) * 100.0;
 
-		r = s_copy_raw_audio_window(&wraw, raw, i * w, w);
+	gettimeofday(&prof, NULL);
+
+	elapsed = (double) prof.tv_sec;
+	elapsed += ((double) prof.tv_usec) / 1000000.0;
+	elapsed = -elapsed;
+#endif
+
+		// Compute the DFT of this raw audio window.
+
+		r = s_fft_part(&((*stft)->dfts[i]), raw, i * w, w);
 
 		if(r < 0)
 		{
@@ -397,13 +432,15 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 			return r;
 		}
 
-		// Compute the DFT of this raw audio window.
+#ifdef SPECTR_DEBUG
+	gettimeofday(&prof, NULL);
 
+	elapsed += (double) prof.tv_sec;
+	elapsed += ((double) prof.tv_usec) / 1000000.0;
 
-
-		// Free this raw audio window.
-
-		s_free_raw_audio(&wraw);
+	printf("DEBUG: Computing %f%% of STFT took: %f sec\n",
+		percent, elapsed);
+#endif
 	}
 
 	// Done!
@@ -422,13 +459,14 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
  * this function is called correctly.
  *
  * \param dft The dft to store the result in.
+ * \param dfto The amount to subtract from the offset for the DFT.
  * \param raw The raw data to transform.
  * \param s The stride to iterate over the list with.
  * \param o The offset to iterate over the list with.
  * \param N the length of the list being iterated over.
  * \return 0 on success, or an error number otherwise.
  */
-int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
+int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 	size_t s, size_t o, size_t bign)
 {
 	int r;
@@ -440,7 +478,6 @@ int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 
 	size_t half;
 
-	s_dft_t *dftprime = NULL;
 	size_t idx;
 
 	double bigw;
@@ -461,8 +498,8 @@ int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 
 	if(bign == 1)
 	{
-		dft->dft[o].r = (double) s_mono_sample(raw->samples[o]);
-		dft->dft[o].i = 0.0;
+		dft->dft[o - dfto].r = (double) s_mono_sample(raw->samples[o]);
+		dft->dft[o - dfto].i = 0.0;
 
 		return 0;
 	}
@@ -477,14 +514,14 @@ int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 
 	// Compute the DFT of the even elements.
 
-	r = s_fft_r(dft, raw, es, eo, bign >> 1);
+	r = s_fft_r(dft, dfto, raw, es, eo, bign >> 1);
 
 	if(r < 0)
 		return r;
 
 	// Compute the DFT of the odd elements.
 
-	r = s_fft_r(dft, raw, os, oo, bign >> 1);
+	r = s_fft_r(dft, dfto, raw, os, oo, bign >> 1);
 
 	if(r < 0)
 		return r;
@@ -497,10 +534,10 @@ int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 	 * computed the correct DFT for this level.
 	 */
 
-	r = s_copy_dft(&dftprime, dft);
+	s_complex_t dftprime[dft->length];
 
-	if(r < 0)
-		return r;
+	for(idx = 0; idx < dft->length; ++idx)
+		dftprime[idx] = dft->dft[idx];
 
 	/*
 	 * Per the Danielson-Lanczos lemma, we have that:
@@ -534,25 +571,23 @@ int s_fft_r(s_dft_t *dft, const s_raw_audio_t *raw,
 		 * values we will use in our computation.
 		 */
 
-		even = &(dftprime->dft[es * idx + eo]);
-		odd = &(dftprime->dft[os * idx + oo]);
+		even = &(dftprime[es * idx + eo - dfto]);
+		odd = &(dftprime[os * idx + oo - dfto]);
 
 		// Compute the lower-half result value.
 
-		dstl = &(dft->dft[s * idx + o]);
+		dstl = &(dft->dft[s * idx + o - dfto]);
 		s_cmul(dstl, &bigwl, odd);
 		s_cadd(dstl, even, dstl);
 
 		// Compute the upper-half result value.
 
-		dstu = &(dft->dft[s * (idx + half) + o]);
+		dstu = &(dft->dft[s * (idx + half) + o - dfto]);
 		s_cmul(dstu, &bigwu, odd);
 		s_cadd(dstu, even, dstu);
 	}
 
-	// Clean up our copy, and we're done.
-
-	s_free_dft(&dftprime);
+	// Done!
 
 	return 0;
 }

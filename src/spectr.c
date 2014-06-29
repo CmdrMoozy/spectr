@@ -31,6 +31,7 @@
 	#include <assert.h>
 	#include <inttypes.h>
 	#include <math.h>
+	#include <sys/time.h>
 
 	#include "decoding/stat.h"
 	#include "util/math.h"
@@ -51,6 +52,9 @@ int main(int argc, char *argv[])
 
 #ifdef SPECTR_DEBUG
 	uint32_t duration;
+
+	struct timeval prof;
+	double elapsed;
 #endif
 
 #ifdef SPECTR_DEBUG
@@ -122,6 +126,14 @@ int main(int argc, char *argv[])
 
 	// Compute the STFT of the raw audio input.
 
+#ifdef SPECTR_DEBUG
+	gettimeofday(&prof, NULL);
+
+	elapsed = (double) prof.tv_sec;
+	elapsed += ((double) prof.tv_usec) / 1000000.0;
+	elapsed = -elapsed;
+#endif
+
 	r = s_stft(&stft, audio, S_WINDOW_SIZE);
 
 	if(r < 0)
@@ -131,7 +143,14 @@ int main(int argc, char *argv[])
 		goto err_after_raw_alloc;
 	}
 
+#ifdef SPECTR_DEBUG
+	gettimeofday(&prof, NULL);
 
+	elapsed += (double) prof.tv_sec;
+	elapsed += ((double) prof.tv_usec) / 1000000.0;
+
+	printf("DEBUG: Computing STFT took: %f sec\n", elapsed);
+#endif
 
 	// Render the processed audio.
 

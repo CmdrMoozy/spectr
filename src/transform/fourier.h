@@ -29,6 +29,7 @@ extern void s_free_dft(s_dft_t **);
 extern int s_init_dft_result(s_dft_t *, size_t);
 extern int s_copy_dft(s_dft_t **, const s_dft_t *);
 
+extern int s_fft_part(s_dft_t **, const s_raw_audio_t *, size_t, size_t);
 extern int s_fft(s_dft_t **, const s_raw_audio_t *);
 
 extern int s_init_stft(s_stft_t **);

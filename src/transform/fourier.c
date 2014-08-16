@@ -592,10 +592,10 @@ int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 	 * computed the correct DFT for this level.
 	 */
 
-	s_complex_t dftprime[dft->length];
+	s_complex_t dftprime[bign];
 
-	for(idx = 0; idx < dft->length; ++idx)
-		dftprime[idx] = dft->dft[idx];
+	for(idx = 0; idx < bign; ++idx)
+		dftprime[idx] = dft->dft[s * idx + o - dfto];
 
 	/*
 	 * Per the Danielson-Lanczos lemma, we have that:
@@ -629,8 +629,8 @@ int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 		 * values we will use in our computation.
 		 */
 
-		even = &(dftprime[es * idx + eo - dfto]);
-		odd = &(dftprime[os * idx + oo - dfto]);
+		even = &(dftprime[2 * idx]);
+		odd = &(dftprime[2 * idx + 1]);
 
 		// Compute the lower-half result value.
 

@@ -223,22 +223,37 @@ int s_render_legend_labels(int fbw, int fbh, const s_stft_t *stft)
 	char fontpath[PATH_MAX];
 	FT_Face font;
 
+	int ret = 0;
+
 	s_spectrogram_viewport view;
 
 	// Initialize the FreeType library, and get the font we'll use.
 
 	if(FT_Init_FreeType(&ft))
-		return -ELIBACC;
+	{
+		ret = -ELIBACC;
+		goto done;
+	}
 
 	r = s_get_mono_font_path(fontpath, PATH_MAX);
 
 	if(r < 0)
 	{
-		FT_Done_FreeType(ft);
-		return r;
+		ret = r;
+		goto err_after_lib_alloc;
 	}
 
+	if(FT_New_Face(ft, fontpath, 0, &font))
+	{
+		ret= -EIO;
+		goto err_after_lib_alloc;
+	}
 
+	if(FT_Set_Pixel_Sizes(font, 0, 20))
+	{
+		ret = -ELIBACC;
+		goto err_after_font_alloc;
+	}
 
 	// Get the viewport parameters we'll use to render.
 
@@ -248,9 +263,12 @@ int s_render_legend_labels(int fbw, int fbh, const s_stft_t *stft)
 
 	// Done!
 
+err_after_font_alloc:
+	FT_Done_Face(font);
+err_after_lib_alloc:
 	FT_Done_FreeType(ft);
-
-	return 0;
+done:
+	return ret;
 }
 
 int s_render_stft(int fbw, int fbh, const s_stft_t *stft)

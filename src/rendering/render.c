@@ -26,6 +26,7 @@
 #include FT_FREETYPE_H
 
 #include "config.h"
+#include "decoding/stat.h"
 #include "util/fonts.h"
 
 s_spectrogram_viewport s_get_spectrogram_viewport(int, int);
@@ -222,6 +223,8 @@ int s_render_legend_labels(int fbw, int fbh, const s_stft_t *stft)
 	FT_Library ft;
 	char fontpath[PATH_MAX];
 	FT_Face font;
+	char fnstr[32];
+	char durstr[32];
 
 	int ret = 0;
 
@@ -258,6 +261,25 @@ int s_render_legend_labels(int fbw, int fbh, const s_stft_t *stft)
 	// Get the viewport parameters we'll use to render.
 
 	view = s_get_spectrogram_viewport(fbw, fbh);
+
+	// Get the frequency and duration labels.
+
+	r = s_audio_duration_str(fnstr, 32,
+		&(stft->raw_stat), stft->raw_length);
+
+	if(r < 0)
+	{
+		ret = r;
+		goto err_after_font_alloc;
+	}
+
+	r = s_nyquist_frequency_str(durstr, 32, &(stft->raw_stat));
+
+	if(r < 0)
+	{
+		ret = r;
+		goto err_after_font_alloc;
+	}
 
 
 

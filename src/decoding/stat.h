@@ -20,11 +20,16 @@
 #define INCLUDE_SPECTR_DECODING_STAT_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include "types.h"
 
 extern int s_audio_stat(s_audio_stat_t *, const char *);
 
 extern uint32_t s_audio_duration_sec(const s_audio_stat_t *, size_t);
+extern int s_audio_duration_str(char *, size_t, const s_audio_stat_t *, size_t);
+
+extern uint32_t s_nyquist_frequency(const s_audio_stat_t *);
+extern int s_nyquist_frequency_str(char *, size_t, const s_audio_stat_t *);
 
 #endif

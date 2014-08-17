@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <math.h>
+#include <inttypes.h>
 
 #include "decoding/ftype.h"
 #include "decoding/quirks/mp3.h"
@@ -34,7 +35,7 @@ int s_interpret_mp3_rate(s_audio_stat_t *, uint8_t, uint8_t);
  *
  * \param stat The audio_stat_t instance which will be populated.
  * \param f The path to the file to inspect.
- * \return 0 on success, or an error number of something goes wrong.
+ * \return 0 on success, or an error number if something goes wrong.
  */
 int s_audio_stat(s_audio_stat_t *stat, const char *f)
 {
@@ -84,6 +85,73 @@ uint32_t s_audio_duration_sec(const s_audio_stat_t *stat, size_t samples)
 		d = samples / stat->sample_rate;
 
 	return d;
+}
+
+/*!
+ * This function renders an audio duration from s_audio_duration_sec() as a
+ * standard "MM:SS" string. The result will be a null-terminated string.
+ *
+ * \param buf The buffer to write the string to.
+ * \param bufsiz The size of the given buffer.
+ * \param stat The stat structure to compute the duration of.
+ * \param samples The number of samples.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_audio_duration_str(char *buf, size_t bufsiz,
+	const s_audio_stat_t *stat, size_t samples)
+{
+	int r;
+	uint32_t sec;
+	uint32_t min;
+
+	sec = s_audio_duration_sec(stat, samples);
+	min = sec / 60;
+	sec %= 60;
+
+	r = snprintf(buf, bufsiz, "%" PRIu32 ":%*" PRIu32, min, 2, sec);
+
+	if(r < 0)
+		return -EIO;
+
+	return 0;
+}
+
+/*!
+ * This function returns the Nyquist frequency of the given raw audio stat
+ * structure. For more information, see:
+ *
+ *     http://en.wikipedia.org/wiki/Nyquist_frequency
+ *
+ * \param stat The stat structure to compute the Nyquist frequency from.
+ * \return The Nyquist frequency of the given structure.
+ */
+uint32_t s_nyquist_frequency(const s_audio_stat_t *stat)
+{
+	return stat->sample_rate / 2;
+}
+
+/*!
+ * This function renders the Nyquist frequency of the given raw audio stat
+ * structure, from s_nyquist_frequency(), as a "#KHz" string.
+ *
+ * \param buf The buffer to write the string to.
+ * \param bufsiz The size of the given buffer.
+ * \param stat The stat structure to compute the Nyquist frequency from.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_nyquist_frequency_str(char *buf, size_t bufsiz,
+	const s_audio_stat_t *stat)
+{
+	int r;
+	double fn = ((double) s_nyquist_frequency(stat)) / 1000.0;
+
+
+	r = snprintf(buf, bufsiz, "%.1fKHz", fn);
+
+	if(r < 0)
+		return -EIO;
+
+	return 0;
 }
 
 /*!

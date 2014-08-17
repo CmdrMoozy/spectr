@@ -19,6 +19,8 @@
 #ifndef INCLUDE_SPECTR_RENDERING_RENDER_H
 #define INCLUDE_SPECTR_RENDERING_RENDER_H
 
-extern int s_render_loop();
+#include "types.h"
+
+extern int s_render_loop(const s_stft_t *stft);
 
 #endif

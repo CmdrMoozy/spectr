@@ -24,14 +24,21 @@
 
 #include "config.h"
 
+int s_render_legend(const s_stft_t *);
+int s_render_stft(const s_stft_t *);
+
 /*!
  * This function creates a new OpenGL window and renders our output inside it.
  *
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_render_loop()
+int s_render_loop(const s_stft_t *stft)
 {
+	int r;
 	GLFWwindow *window;
+
+	int width;
+	int height;
 
 	if(!glfwInit())
 		return -EINVAL;
@@ -49,7 +56,39 @@ int s_render_loop()
 
 	while(!glfwWindowShouldClose(window))
 	{
+		// Initialize the GL viewport.
 
+		glfwGetFramebufferSize(window, &width, &height);
+
+		glViewport(0, 0, width, height);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(-0.5f, (width - 1) + 0.5f,
+			(height - 1) + 0.5f, -0.5f, 0.0f, 1.0f);
+
+		// Render the frame / legend around the output.
+
+		r = s_render_legend(stft);
+
+		if(r < 0)
+		{
+			glfwTerminate();
+			return r;
+		}
+
+		// Render the actual graphical STFT output.
+
+		r = s_render_stft(stft);
+
+		if(r < 0)
+		{
+			glfwTerminate();
+			return r;
+		}
+
+		// End GL rendering, swap the buffer, and poll for events.
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -57,5 +96,15 @@ int s_render_loop()
 
 	glfwTerminate();
 
+	return 0;
+}
+
+int s_render_legend(const s_stft_t *stft)
+{
+	return 0;
+}
+
+int s_render_stft(const s_stft_t *stft)
+{
 	return 0;
 }

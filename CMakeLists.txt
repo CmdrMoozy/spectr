@@ -21,6 +21,8 @@ FIND_PACKAGE(OpenGL REQUIRED)
 
 PKG_SEARCH_MODULE(GLFW REQUIRED glfw3)
 
+FIND_PACKAGE(Freetype REQUIRED)
+
 # Set INCLUDE and CFLAGS
 
 IF(NOT CMAKE_BUILD_TYPE)
@@ -40,6 +42,7 @@ SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${DBG_FLAGS}")
 SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${REL_FLAGS}")
 
 INCLUDE_DIRECTORIES("src")
+INCLUDE_DIRECTORIES(${FREETYPE_INCLUDE_DIRS})
 
 # Define our project's source files.
 
@@ -60,7 +63,9 @@ SET(spectr_HEADERS
 
 	src/util/bitwise.h
 	src/util/complex.h
+	src/util/fonts.h
 	src/util/math.h
+	src/util/path.h
 
 )
 
@@ -81,7 +86,9 @@ SET(spectr_SOURCES
 
 	src/util/bitwise.c
 	src/util/complex.c
+	src/util/fonts.c
 	src/util/math.c
+	src/util/path.c
 
 )
 
@@ -89,4 +96,8 @@ SET(spectr_SOURCES
 
 ADD_EXECUTABLE(spectr ${spectr_SOURCES})
 TARGET_LINK_LIBRARIES(spectr m ${FFMPEG_LIBRARIES}
-	${OPENGL_LIBRARIES} ${GLFW_LIBRARIES})
+	${OPENGL_LIBRARIES} ${GLFW_LIBRARIES} ${FREETYPE_LIBRARIES})
+
+ADD_CUSTOM_COMMAND(TARGET spectr PRE_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	${CMAKE_SOURCE_DIR}/fonts $<TARGET_FILE_DIR:spectr>/fonts)

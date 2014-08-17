@@ -19,14 +19,19 @@
 #include "render.h"
 
 #include <errno.h>
+#include <linux/limits.h>
 
 #include <GLFW/glfw3.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include "config.h"
+#include "util/fonts.h"
 
 s_spectrogram_viewport s_get_spectrogram_viewport(int, int);
 void s_gl_legend_color();
-int s_render_legend(int, int, const s_stft_t *);
+int s_render_legend_frame(int, int);
+int s_render_legend_labels(int, int, const s_stft_t *);
 int s_render_stft(int, int, const s_stft_t *);
 
 /*!
@@ -72,7 +77,15 @@ int s_render_loop(const s_stft_t *stft)
 
 		// Render the frame / legend around the output.
 
-		r = s_render_legend(width, height, stft);
+		r = s_render_legend_frame(width, height);
+
+		if(r < 0)
+		{
+			glfwTerminate();
+			return r;
+		}
+
+		r = s_render_legend_labels(width, height, stft);
 
 		if(r < 0)
 		{
@@ -141,10 +154,9 @@ void s_gl_legend_color()
  *
  * \param fbw The framebuffer width.
  * \param fbh The framebuffer height.
- * \param stft The STFT we're rendering a spectrogram from.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_render_legend(int fbw, int fbh, const s_stft_t *stft)
+int s_render_legend_frame(int fbw, int fbh)
 {
 	s_spectrogram_viewport view = s_get_spectrogram_viewport(fbw, fbh);
 
@@ -200,6 +212,43 @@ int s_render_legend(int fbw, int fbh, const s_stft_t *stft)
 	glEnd();
 
 	// Done!
+
+	return 0;
+}
+
+int s_render_legend_labels(int fbw, int fbh, const s_stft_t *stft)
+{
+	int r;
+	FT_Library ft;
+	char fontpath[PATH_MAX];
+	FT_Face font;
+
+	s_spectrogram_viewport view;
+
+	// Initialize the FreeType library, and get the font we'll use.
+
+	if(FT_Init_FreeType(&ft))
+		return -ELIBACC;
+
+	r = s_get_mono_font_path(fontpath, PATH_MAX);
+
+	if(r < 0)
+	{
+		FT_Done_FreeType(ft);
+		return r;
+	}
+
+
+
+	// Get the viewport parameters we'll use to render.
+
+	view = s_get_spectrogram_viewport(fbw, fbh);
+
+
+
+	// Done!
+
+	FT_Done_FreeType(ft);
 
 	return 0;
 }

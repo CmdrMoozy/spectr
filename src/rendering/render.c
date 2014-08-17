@@ -24,8 +24,10 @@
 
 #include "config.h"
 
-int s_render_legend(const s_stft_t *);
-int s_render_stft(const s_stft_t *);
+s_spectrogram_viewport s_get_spectrogram_viewport(int, int);
+void s_gl_legend_color();
+int s_render_legend(int, int, const s_stft_t *);
+int s_render_stft(int, int, const s_stft_t *);
 
 /*!
  * This function creates a new OpenGL window and renders our output inside it.
@@ -70,7 +72,7 @@ int s_render_loop(const s_stft_t *stft)
 
 		// Render the frame / legend around the output.
 
-		r = s_render_legend(stft);
+		r = s_render_legend(width, height, stft);
 
 		if(r < 0)
 		{
@@ -80,7 +82,7 @@ int s_render_loop(const s_stft_t *stft)
 
 		// Render the actual graphical STFT output.
 
-		r = s_render_stft(stft);
+		r = s_render_stft(width, height, stft);
 
 		if(r < 0)
 		{
@@ -99,12 +101,110 @@ int s_render_loop(const s_stft_t *stft)
 	return 0;
 }
 
-int s_render_legend(const s_stft_t *stft)
+/*!
+ * This function computes the spectrogram viewport we're using from the given
+ * framebuffer width and height values (from glfwGetFramebufferSize()).
+ *
+ * The returned structure should be used to render our spectrogram, to avoid
+ * scattering various "magic numbers" throughout the code.
+ *
+ * \param fbw The framebuffer width.
+ * \param fbh The framebuffer height.
+ * \return The spectrogram viewport for the given framebuffer.
+ */
+s_spectrogram_viewport s_get_spectrogram_viewport(int fbw, int fbh)
 {
+	s_spectrogram_viewport v;
+
+	v.xmin = 75;
+	v.ymin = 5;
+
+	v.xmax = fbw - 5;
+	v.ymax = fbh - 30;
+
+	return v;
+}
+
+/*!
+ * This is a convenience function which calls glColor3f() with our standard
+ * legend color. This provides a single place to change the color, if desired.
+ */
+void s_gl_legend_color()
+{
+	glColor3f(1.0f, 1.0f, 1.0f);
+}
+
+/*!
+ * This function renders the spectrogram legend using OpenGL. This includes the
+ * frame around the spectrogram, as well as the frequency and time labels for
+ * the loaded track.
+ *
+ * \param fbw The framebuffer width.
+ * \param fbh The framebuffer height.
+ * \param stft The STFT we're rendering a spectrogram from.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_render_legend(int fbw, int fbh, const s_stft_t *stft)
+{
+	s_spectrogram_viewport view = s_get_spectrogram_viewport(fbw, fbh);
+
+	// Draw the frame which will contain the actual spectrogram.
+
+	glBegin(GL_LINE_LOOP);
+
+		s_gl_legend_color();
+
+		glVertex2i(view.xmin, view.ymin);
+		glVertex2i(view.xmax, view.ymin);
+		glVertex2i(view.xmax, view.ymax);
+		glVertex2i(view.xmin, view.ymax);
+
+	glEnd();
+
+	// Draw the extra lines which we'll render labels next to.
+
+	glBegin(GL_LINE_LOOP);
+
+		s_gl_legend_color();
+
+		glVertex2i(view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin);
+		glVertex2i(view.xmin, view.ymin);
+
+	glEnd();
+
+	glBegin(GL_LINE_LOOP);
+
+		s_gl_legend_color();
+
+		glVertex2i(view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax);
+		glVertex2i(view.xmin, view.ymax);
+
+	glEnd();
+
+	glBegin(GL_LINE_LOOP);
+
+		s_gl_legend_color();
+
+		glVertex2i(view.xmin, view.ymax);
+		glVertex2i(view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE);
+
+	glEnd();
+
+	glBegin(GL_LINE_LOOP);
+
+		s_gl_legend_color();
+
+		glVertex2i(view.xmax, view.ymax);
+		glVertex2i(view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE);
+
+	glEnd();
+
+	// Done!
+
 	return 0;
 }
 
-int s_render_stft(const s_stft_t *stft)
+int s_render_stft(int fbw, int fbh, const s_stft_t *stft)
 {
 	return 0;
 }

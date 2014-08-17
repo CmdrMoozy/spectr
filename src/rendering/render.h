@@ -21,6 +21,20 @@
 
 #include "types.h"
 
+/*!
+ * \brief This structure defines the bounds of our spectrogram viewport.
+ *
+ * The points (xmin, ymin) and (xmax, ymax) are the upper-left and lower-right
+ * corners of our spectrogram viewport, respectively.
+ */
+typedef struct s_spectrogram_viewport
+{
+	int xmin;
+	int ymin;
+	int xmax;
+	int ymax;
+} s_spectrogram_viewport;
+
 extern int s_render_loop(const s_stft_t *stft);
 
 #endif

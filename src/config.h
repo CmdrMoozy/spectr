@@ -33,4 +33,9 @@
 #define S_WINDOW_W 800
 #define S_WINDOW_H 250
 
+/*
+ * These values define some properties of our spectrogram legend.
+ */
+#define S_SPEC_LGND_TICK_SIZE 7
+
 #endif

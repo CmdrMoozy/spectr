@@ -16,25 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_RENDERING_RENDER_H
-#define INCLUDE_SPECTR_RENDERING_RENDER_H
+#ifndef INCLUDE_SPECTR_RENDERING_GLINIT_H
+#define INCLUDE_SPECTR_RENDERING_GLINIT_H
 
 #include "types.h"
 
-/*!
- * \brief This structure defines the bounds of our spectrogram viewport.
- *
- * The points (xmin, ymin) and (xmax, ymax) are the upper-left and lower-right
- * corners of our spectrogram viewport, respectively.
- */
-typedef struct s_spectrogram_viewport
-{
-	int xmin;
-	int ymin;
-	int xmax;
-	int ymax;
-} s_spectrogram_viewport;
-
-extern int s_render(const s_stft_t *stft);
+extern int s_init_gl(int (*fptr)(int, int, const s_stft_t *),
+	const s_stft_t *stft);
 
 #endif

@@ -21,14 +21,16 @@
 #include <errno.h>
 #include <linux/limits.h>
 
-#include <GLFW/glfw3.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <GLFW/glfw3.h>
 
 #include "config.h"
 #include "decoding/stat.h"
+#include "rendering/glinit.h"
 #include "util/fonts.h"
 
+int s_render_loop(int, int, const s_stft_t *);
 s_spectrogram_viewport s_get_spectrogram_viewport(int, int);
 void s_gl_legend_color();
 int s_render_legend_frame(int, int);
@@ -36,81 +38,50 @@ int s_render_legend_labels(int, int, const s_stft_t *);
 int s_render_stft(int, int, const s_stft_t *);
 
 /*!
- * This function creates a new OpenGL window and renders our output inside it.
+ * This function starts our OpenGL rendering loop, to render the given STFT's
+ * spectrogram.
  *
+ * \param stft The STFT whose spectrogram should be rendered.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_render_loop(const s_stft_t *stft)
+int s_render(const s_stft_t *stft)
+{
+	return s_init_gl(s_render_loop, stft);
+}
+
+/*!
+ * This function is passed to our OpenGL initialization function, and is called
+ * during each render loop. See s_init_gl for details.
+ *
+ * \param width The width of the framebuffer.
+ * \param height The height of the framebuffer.
+ * \param stft The STFT whose spectrogram should be rendered.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_render_loop(int width, int height, const s_stft_t *stft)
 {
 	int r;
-	GLFWwindow *window;
 
-	int width;
-	int height;
+	// Render the frame / legend around the output.
 
-	if(!glfwInit())
-		return -EINVAL;
+	r = s_render_legend_frame(width, height);
 
-	window = glfwCreateWindow(S_WINDOW_W, S_WINDOW_H,
-		"Spectr", NULL, NULL);
+	if(r < 0)
+		return r;
 
-	if(!window)
-	{
-		glfwTerminate();
-		return -EINVAL;
-	}
+	r = s_render_legend_labels(width, height, stft);
 
-	glfwMakeContextCurrent(window);
+	if(r < 0)
+		return r;
 
-	while(!glfwWindowShouldClose(window))
-	{
-		// Initialize the GL viewport.
+	// Render the actual graphical STFT output.
 
-		glfwGetFramebufferSize(window, &width, &height);
+	r = s_render_stft(width, height, stft);
 
-		glViewport(0, 0, width, height);
-		glClear(GL_COLOR_BUFFER_BIT);
+	if(r < 0)
+		return r;
 
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-0.5f, (width - 1) + 0.5f,
-			(height - 1) + 0.5f, -0.5f, 0.0f, 1.0f);
-
-		// Render the frame / legend around the output.
-
-		r = s_render_legend_frame(width, height);
-
-		if(r < 0)
-		{
-			glfwTerminate();
-			return r;
-		}
-
-		r = s_render_legend_labels(width, height, stft);
-
-		if(r < 0)
-		{
-			glfwTerminate();
-			return r;
-		}
-
-		// Render the actual graphical STFT output.
-
-		r = s_render_stft(width, height, stft);
-
-		if(r < 0)
-		{
-			glfwTerminate();
-			return r;
-		}
-
-		// End GL rendering, swap the buffer, and poll for events.
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
-
-	glfwTerminate();
+	// Done!
 
 	return 0;
 }

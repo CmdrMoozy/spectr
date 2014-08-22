@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 	printf("Entering rendering loop...\n");
 #endif
 
-	r = s_render_loop(stft);
+	r = s_render(stft);
 
 	if(r < 0)
 	{

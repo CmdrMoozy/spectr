@@ -57,6 +57,7 @@ SET(spectr_HEADERS
 
 	src/decoding/quirks/mp3.h
 
+	src/rendering/glinit.h
 	src/rendering/render.h
 
 	src/transform/fourier.h
@@ -80,6 +81,7 @@ SET(spectr_SOURCES
 
 	src/decoding/quirks/mp3.c
 
+	src/rendering/glinit.c
 	src/rendering/render.c
 
 	src/transform/fourier.c

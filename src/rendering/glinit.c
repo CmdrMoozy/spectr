@@ -36,12 +36,28 @@ int s_set_uniforms();
  * based upon the type of projection we want to render.
  */
 static const GLchar *s_vertex_shader_src = {
-	"#version 400\n"
-	"layout(location = 0) in vec4 position;\n"
+	"#version 440\n"
+	"in vec4 position;\n"
 	"uniform mat4 projection;\n"
 	"void main()\n"
 	"{\n"
-		"gl_Position = Projection * position\n"
+		"\tgl_Position = projection * position;\n"
+	"}\n"
+};
+
+/*!
+ * \brief This is the source code for our fragment shader.
+ *
+ * We load this shader into our program when initializing it, and then set its uniform
+ * based upon what color we want to use for rendering.
+ */
+static const GLchar *s_fragment_shader_src = {
+	"#version 440\n"
+	"uniform vec4 color;\n"
+	"out vec4 outputColor;\n"
+	"void main()\n"
+	"{\n"
+		"outputColor = color;\n"
 	"}\n"
 };
 
@@ -80,6 +96,8 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *), const s_stft_t *stft)
 		return -EINVAL;
 	}
 
+	glfwMakeContextCurrent(window);
+
 	r = s_init_program();
 
 	if(r < 0)
@@ -87,8 +105,6 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *), const s_stft_t *stft)
 		glfwTerminate();
 		return -EINVAL;
 	}
-
-	glfwMakeContextCurrent(window);
 
 	while(!glfwWindowShouldClose(window))
 	{
@@ -140,6 +156,7 @@ int s_init_program()
 {
 	GLint status;
 	GLuint vertexShader;
+	GLuint fragmentShader;
 
 	// Initialize our vertex shader.
 
@@ -152,11 +169,23 @@ int s_init_program()
 	if(status == GL_FALSE)
 		return -EINVAL;
 
+	// Initialize our fragment shader.
+
+	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(fragmentShader, 1, &s_fragment_shader_src, NULL);
+	glCompileShader(fragmentShader);
+
+	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
+
+	if(status == GL_FALSE)
+		return -EINVAL;
+
 	// Initialize the program.
 
 	s_program = glCreateProgram();
 
 	glAttachShader(s_program, vertexShader);
+	glAttachShader(s_program, fragmentShader);
 
 	glLinkProgram(s_program);
 
@@ -168,6 +197,7 @@ int s_init_program()
 	// Detach the shaders, now that the program is linked.
 
 	glDetachShader(s_program, vertexShader);
+	glDetachShader(s_program, fragmentShader);
 
 	// Done!
 
@@ -187,6 +217,9 @@ int s_set_uniforms(int width, int height)
 	GLint orthoMatrix;
 	GLfloat matrix[16];
 
+	GLint colorVec;
+	GLfloat color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+
 	// Set our orthographic projection uniform.
 
 	orthoMatrix = glGetUniformLocation(s_program, "projection");
@@ -198,6 +231,15 @@ int s_set_uniforms(int width, int height)
 		((GLfloat) (height - 1)) + 0.5f, -0.5f, 0.0f, 1.0f);
 
 	glUniformMatrix4fv(orthoMatrix, 1, GL_FALSE, matrix);
+
+	// Set our rendering color uniform.
+
+	colorVec = glGetUniformLocation(s_program, "color");
+
+	if(colorVec == -1)
+		return -EINVAL;
+
+	glUniform4fv(colorVec, 1, color);
 
 	// Done!
 

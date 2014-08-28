@@ -41,6 +41,8 @@ SET(REL_FLAGS "${REL_FLAGS} -std=c11")
 SET(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ${DBG_FLAGS}")
 SET(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ${REL_FLAGS}")
 
+ADD_DEFINITIONS(-DGL_GLEXT_PROTOTYPES)
+
 INCLUDE_DIRECTORIES("src")
 INCLUDE_DIRECTORIES(${FREETYPE_INCLUDE_DIRS})
 
@@ -58,6 +60,7 @@ SET(spectr_HEADERS
 	src/decoding/quirks/mp3.h
 
 	src/rendering/glinit.h
+	src/rendering/glutils.h
 	src/rendering/render.h
 
 	src/transform/fourier.h
@@ -82,6 +85,7 @@ SET(spectr_SOURCES
 	src/decoding/quirks/mp3.c
 
 	src/rendering/glinit.c
+	src/rendering/glutils.c
 	src/rendering/render.c
 
 	src/transform/fourier.c

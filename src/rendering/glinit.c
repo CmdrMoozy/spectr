@@ -21,8 +21,34 @@
 #include <errno.h>
 
 #include <GLFW/glfw3.h>
+#include <GL/gl.h>
 
 #include "config.h"
+#include "rendering/glutils.h"
+
+int s_init_program();
+int s_set_uniforms();
+
+/*!
+ * \brief This is the source code for our vertex shader.
+ *
+ * We load this shader into our program when initializing it, and then set its uniform
+ * based upon the type of projection we want to render.
+ */
+static const GLchar *s_vertex_shader_src = {
+	"#version 400\n"
+	"layout(location = 0) in vec4 position;\n"
+	"uniform mat4 projection;\n"
+	"void main()\n"
+	"{\n"
+		"gl_Position = Projection * position\n"
+	"}\n"
+};
+
+/*!
+ * \brief Stores our OpenGL program, from glCreateProgram().
+ */
+static GLuint s_program = 0;
 
 /*!
  * This is a utility function which initializes OpenGL in a way that it's ready
@@ -54,6 +80,14 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *), const s_stft_t *stft)
 		return -EINVAL;
 	}
 
+	r = s_init_program();
+
+	if(r < 0)
+	{
+		glfwTerminate();
+		return -EINVAL;
+	}
+
 	glfwMakeContextCurrent(window);
 
 	while(!glfwWindowShouldClose(window))
@@ -62,12 +96,18 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *), const s_stft_t *stft)
 
 		glfwGetFramebufferSize(window, &width, &height);
 
+		r = s_set_uniforms(width, height);
+
+		if(r < 0)
+		{
+			glfwTerminate();
+			return r;
+		}
+
 		glViewport(0, 0, width, height);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
-
-
 
 		// Call the user-provided rendering function.
 
@@ -86,6 +126,80 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *), const s_stft_t *stft)
 	}
 
 	glfwTerminate();
+
+	return 0;
+}
+
+/*!
+ * This function initializes the OpenGL program we will link our shaders into for
+ * rendering our spectrogram.
+ *
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_init_program()
+{
+	GLint status;
+	GLuint vertexShader;
+
+	// Initialize our vertex shader.
+
+	vertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(vertexShader, 1, &s_vertex_shader_src, NULL);
+	glCompileShader(vertexShader);
+
+	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
+
+	if(status == GL_FALSE)
+		return -EINVAL;
+
+	// Initialize the program.
+
+	s_program = glCreateProgram();
+
+	glAttachShader(s_program, vertexShader);
+
+	glLinkProgram(s_program);
+
+	glGetProgramiv(s_program, GL_LINK_STATUS, &status);
+
+	if(status == GL_FALSE)
+		return -EINVAL;
+
+	// Detach the shaders, now that the program is linked.
+
+	glDetachShader(s_program, vertexShader);
+
+	// Done!
+
+	return 0;
+}
+
+/*!
+ * This function sets the uniforms used in our various shaders to the proper values for
+ * our orthographic projection.
+ *
+ * \param width The framebuffer width.
+ * \param height The framebuffer height.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_set_uniforms(int width, int height)
+{
+	GLint orthoMatrix;
+	GLfloat matrix[16];
+
+	// Set our orthographic projection uniform.
+
+	orthoMatrix = glGetUniformLocation(s_program, "projection");
+
+	if(orthoMatrix == -1)
+		return -EINVAL;
+
+	s_ortho_matrix(matrix, -0.5f, ((GLfloat) (width - 1)) + 0.5f,
+		((GLfloat) (height - 1)) + 0.5f, -0.5f, 0.0f, 1.0f);
+
+	glUniformMatrix4fv(orthoMatrix, 1, GL_FALSE, matrix);
+
+	// Done!
 
 	return 0;
 }

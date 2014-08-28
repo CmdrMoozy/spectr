@@ -111,15 +111,6 @@ s_spectrogram_viewport s_get_spectrogram_viewport(int fbw, int fbh)
 }
 
 /*!
- * This is a convenience function which calls glColor3f() with our standard
- * legend color. This provides a single place to change the color, if desired.
- */
-void s_gl_legend_color()
-{
-	glColor3f(1.0f, 1.0f, 1.0f);
-}
-
-/*!
  * This function renders the spectrogram legend using OpenGL. This includes the
  * frame around the spectrogram, as well as the frequency and time labels for
  * the loaded track.
@@ -136,8 +127,6 @@ int s_render_legend_frame(int fbw, int fbh)
 
 	glBegin(GL_LINE_LOOP);
 
-		s_gl_legend_color();
-
 		glVertex2i(view.xmin, view.ymin);
 		glVertex2i(view.xmax, view.ymin);
 		glVertex2i(view.xmax, view.ymax);
@@ -149,16 +138,12 @@ int s_render_legend_frame(int fbw, int fbh)
 
 	glBegin(GL_LINE_LOOP);
 
-		s_gl_legend_color();
-
 		glVertex2i(view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin);
 		glVertex2i(view.xmin, view.ymin);
 
 	glEnd();
 
 	glBegin(GL_LINE_LOOP);
-
-		s_gl_legend_color();
 
 		glVertex2i(view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax);
 		glVertex2i(view.xmin, view.ymax);
@@ -167,16 +152,12 @@ int s_render_legend_frame(int fbw, int fbh)
 
 	glBegin(GL_LINE_LOOP);
 
-		s_gl_legend_color();
-
 		glVertex2i(view.xmin, view.ymax);
 		glVertex2i(view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE);
 
 	glEnd();
 
 	glBegin(GL_LINE_LOOP);
-
-		s_gl_legend_color();
 
 		glVertex2i(view.xmax, view.ymax);
 		glVertex2i(view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE);

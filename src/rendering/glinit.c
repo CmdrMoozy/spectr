@@ -20,9 +20,6 @@
 
 #include <errno.h>
 
-#include <GLFW/glfw3.h>
-#include <GL/gl.h>
-
 #include "config.h"
 #include "rendering/glutils.h"
 
@@ -147,6 +144,31 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *), const s_stft_t *stft)
 }
 
 /*!
+ * This function sets our rendering color. Note that s_init_gl MUST have been called
+ * first. Note that each component must be in the range [0, 1].
+ *
+ * \param r The red component.
+ * \param g The green component.
+ * \param b The blue component.
+ * \param a The alpha component.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_gl_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
+{
+	GLint colorVec;
+	GLfloat color[4] = {r, g, b, a};
+
+	colorVec = glGetUniformLocation(s_program, "color");
+
+	if(colorVec == -1)
+		return -EINVAL;
+
+	glUniform4fv(colorVec, 1, color);
+
+	return 0;
+}
+
+/*!
  * This function initializes the OpenGL program we will link our shaders into for
  * rendering our spectrogram.
  *
@@ -214,11 +236,9 @@ int s_init_program()
  */
 int s_set_uniforms(int width, int height)
 {
+	int r;
 	GLint orthoMatrix;
 	GLfloat matrix[16];
-
-	GLint colorVec;
-	GLfloat color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
 
 	// Set our orthographic projection uniform.
 
@@ -234,12 +254,10 @@ int s_set_uniforms(int width, int height)
 
 	// Set our rendering color uniform.
 
-	colorVec = glGetUniformLocation(s_program, "color");
+	r = s_gl_color(1.0f, 1.0f, 1.0f, 1.0f);
 
-	if(colorVec == -1)
-		return -EINVAL;
-
-	glUniform4fv(colorVec, 1, color);
+	if(r < 0)
+		return r;
 
 	// Done!
 

@@ -96,4 +96,18 @@ typedef struct s_stft
 	s_dft_t **dfts;
 } s_stft_t;
 
+/*!
+ * \brief This structure defines the bounds of our spectrogram viewport.
+ *
+ * The points (xmin, ymin) and (xmax, ymax) are the upper-left and lower-right
+ * corners of our spectrogram viewport, respectively.
+ */
+typedef struct s_spectrogram_viewport
+{
+	int xmin;
+	int ymin;
+	int xmax;
+	int ymax;
+} s_spectrogram_viewport;
+
 #endif

@@ -19,9 +19,13 @@
 #ifndef INCLUDE_SPECTR_RENDERING_GLINIT_H
 #define INCLUDE_SPECTR_RENDERING_GLINIT_H
 
+#include <GLFW/glfw3.h>
+#include <GL/gl.h>
+
 #include "types.h"
 
 extern int s_init_gl(int (*fptr)(int, int, const s_stft_t *),
 	const s_stft_t *stft);
+extern int s_gl_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
 
 #endif

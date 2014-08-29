@@ -122,6 +122,7 @@ typedef struct s_vbo_t
 	GLfloat *data;
 	size_t length;
 	GLenum usage;
+	GLenum mode;
 } s_vbo_t;
 
 #endif

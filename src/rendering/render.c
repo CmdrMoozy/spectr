@@ -33,9 +33,19 @@
 int s_render_loop(int, int, const s_stft_t *);
 s_spectrogram_viewport s_get_spectrogram_viewport(int, int);
 void s_gl_legend_color();
-int s_render_legend_frame(int, int);
+int s_render_legend_frame();
 int s_render_legend_labels(int, int, const s_stft_t *);
 int s_render_stft(int, int, const s_stft_t *);
+
+/*!
+ * \brief This list stores all of the VBO's we use for rendering.
+ */
+static s_vbo_t *s_vbo_list = NULL;
+
+/*!
+ * \brief This stores the length of s_vbo_list.
+ */
+static size_t s_vbo_list_length = 0;
 
 /*!
  * This function starts our OpenGL rendering loop, to render the given STFT's
@@ -46,7 +56,58 @@ int s_render_stft(int, int, const s_stft_t *);
  */
 int s_render(const s_stft_t *stft)
 {
-	return s_init_gl(s_render_loop, NULL, 0, stft);
+	int r;
+	s_spectrogram_viewport view = s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
+
+	// Allocate the list of VBO objects we'll use.
+
+	s_vbo_list_length = 1;
+	s_vbo_list = (s_vbo_t *) malloc(sizeof(s_vbo_t) * s_vbo_list_length);
+
+	if(s_vbo_list == NULL)
+		return -ENOMEM;
+
+	// Set the values of the legend frame vertices.
+
+	s_vbo_list[0].data = (GLfloat[28]) {
+		view.xmin, view.ymin,
+		view.xmax, view.ymin,
+
+		view.xmax, view.ymin,
+		view.xmax, view.ymax,
+
+		view.xmax, view.ymax,
+		view.xmin, view.ymax,
+
+		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin,
+		view.xmin, view.ymin,
+
+		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax,
+		view.xmin, view.ymax,
+
+		view.xmin, view.ymax,
+		view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE,
+
+		view.xmax, view.ymax,
+		view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE
+	};
+
+	s_vbo_list[0].length = 28;
+	s_vbo_list[0].usage = GL_STATIC_DRAW;
+	s_vbo_list[0].mode = GL_LINES;
+
+	// Initialize the GL context, and start the rendering loop.
+
+	r = s_init_gl(s_render_loop, s_vbo_list, s_vbo_list_length, stft);
+
+	// Free our VBO's.
+
+	free(s_vbo_list);
+	s_vbo_list = NULL;
+
+	// Done.
+
+	return r;
 }
 
 /*!
@@ -64,7 +125,7 @@ int s_render_loop(int width, int height, const s_stft_t *stft)
 
 	// Render the frame / legend around the output.
 
-	r = s_render_legend_frame(width, height);
+	r = s_render_legend_frame();
 
 	if(r < 0)
 		return r;
@@ -115,56 +176,17 @@ s_spectrogram_viewport s_get_spectrogram_viewport(int fbw, int fbh)
  * frame around the spectrogram, as well as the frequency and time labels for
  * the loaded track.
  *
- * \param fbw The framebuffer width.
- * \param fbh The framebuffer height.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_render_legend_frame(int fbw, int fbh)
+int s_render_legend_frame()
 {
-	s_spectrogram_viewport view = s_get_spectrogram_viewport(fbw, fbh);
+	glBindBuffer(GL_ARRAY_BUFFER, s_vbo_list[0].obj);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
 
-	// Draw the frame which will contain the actual spectrogram.
+	glDrawArrays(s_vbo_list[0].mode, 0, s_vbo_list_length);
 
-	glBegin(GL_LINE_LOOP);
-
-		glVertex2i(view.xmin, view.ymin);
-		glVertex2i(view.xmax, view.ymin);
-		glVertex2i(view.xmax, view.ymax);
-		glVertex2i(view.xmin, view.ymax);
-
-	glEnd();
-
-	// Draw the extra lines which we'll render labels next to.
-
-	glBegin(GL_LINE_LOOP);
-
-		glVertex2i(view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin);
-		glVertex2i(view.xmin, view.ymin);
-
-	glEnd();
-
-	glBegin(GL_LINE_LOOP);
-
-		glVertex2i(view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax);
-		glVertex2i(view.xmin, view.ymax);
-
-	glEnd();
-
-	glBegin(GL_LINE_LOOP);
-
-		glVertex2i(view.xmin, view.ymax);
-		glVertex2i(view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE);
-
-	glEnd();
-
-	glBegin(GL_LINE_LOOP);
-
-		glVertex2i(view.xmax, view.ymax);
-		glVertex2i(view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE);
-
-	glEnd();
-
-	// Done!
+	glDisableVertexAttribArray(0);
 
 	return 0;
 }

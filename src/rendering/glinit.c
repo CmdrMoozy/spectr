@@ -148,6 +148,8 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *),
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		glUseProgram(s_program);
+
 		// Call the user-provided rendering function.
 
 		r = fptr(width, height, stft);
@@ -159,6 +161,8 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *),
 		}
 
 		// End GL rendering, swap the buffer, and poll for events.
+
+		glUseProgram(0);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

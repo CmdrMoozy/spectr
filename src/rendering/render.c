@@ -30,12 +30,12 @@
 #include "rendering/glinit.h"
 #include "util/fonts.h"
 
-int s_render_loop(int, int, const s_stft_t *);
-s_spectrogram_viewport s_get_spectrogram_viewport(int, int);
+int s_render_loop(const s_stft_t *);
+s_spectrogram_viewport s_get_spectrogram_viewport();
 void s_gl_legend_color();
 int s_render_legend_frame();
-int s_render_legend_labels(int, int, const s_stft_t *);
-int s_render_stft(int, int, const s_stft_t *);
+int s_render_legend_labels(const s_stft_t *);
+int s_render_stft(const s_stft_t *);
 
 /*!
  * \brief This list stores all of the VBO's we use for rendering.
@@ -69,30 +69,21 @@ int s_render(const s_stft_t *stft)
 
 	// Set the values of the legend frame vertices.
 
-	s_vbo_list[0].data = (GLfloat[28]) {
-		view.xmin, view.ymin,
-		view.xmax, view.ymin,
-
-		view.xmax, view.ymin,
-		view.xmax, view.ymax,
-
-		view.xmax, view.ymax,
-		view.xmin, view.ymax,
-
+	s_vbo_list[0].data = (GLfloat[16]) {
 		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin,
-		view.xmin, view.ymin,
+		view.xmax, view.ymin,
 
-		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax,
-		view.xmin, view.ymax,
-
-		view.xmin, view.ymax,
-		view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE,
+		view.xmax, view.ymin,
+		view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE,
 
 		view.xmax, view.ymax,
-		view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE
+		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax,
+
+		view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE,
+		view.xmin, view.ymin
 	};
 
-	s_vbo_list[0].length = 28;
+	s_vbo_list[0].length = 16;
 	s_vbo_list[0].usage = GL_STATIC_DRAW;
 	s_vbo_list[0].mode = GL_LINES;
 
@@ -114,12 +105,10 @@ int s_render(const s_stft_t *stft)
  * This function is passed to our OpenGL initialization function, and is called
  * during each render loop. See s_init_gl for details.
  *
- * \param width The width of the framebuffer.
- * \param height The height of the framebuffer.
  * \param stft The STFT whose spectrogram should be rendered.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_render_loop(int width, int height, const s_stft_t *stft)
+int s_render_loop(const s_stft_t *stft)
 {
 	int r;
 
@@ -130,14 +119,14 @@ int s_render_loop(int width, int height, const s_stft_t *stft)
 	if(r < 0)
 		return r;
 
-	r = s_render_legend_labels(width, height, stft);
+	r = s_render_legend_labels(stft);
 
 	if(r < 0)
 		return r;
 
 	// Render the actual graphical STFT output.
 
-	r = s_render_stft(width, height, stft);
+	r = s_render_stft(stft);
 
 	if(r < 0)
 		return r;
@@ -154,19 +143,17 @@ int s_render_loop(int width, int height, const s_stft_t *stft)
  * The returned structure should be used to render our spectrogram, to avoid
  * scattering various "magic numbers" throughout the code.
  *
- * \param fbw The framebuffer width.
- * \param fbh The framebuffer height.
  * \return The spectrogram viewport for the given framebuffer.
  */
-s_spectrogram_viewport s_get_spectrogram_viewport(int fbw, int fbh)
+s_spectrogram_viewport s_get_spectrogram_viewport()
 {
 	s_spectrogram_viewport v;
 
 	v.xmin = 75;
 	v.ymin = 5;
 
-	v.xmax = fbw - 5;
-	v.ymax = fbh - 30;
+	v.xmax = S_WINDOW_W - 5;
+	v.ymax = S_WINDOW_H - 30;
 
 	return v;
 }
@@ -181,17 +168,18 @@ s_spectrogram_viewport s_get_spectrogram_viewport(int fbw, int fbh)
 int s_render_legend_frame()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, s_vbo_list[0].obj);
+
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glDrawArrays(s_vbo_list[0].mode, 0, s_vbo_list_length);
+	glDrawArrays(s_vbo_list[0].mode, 0, s_vbo_list[0].length / 2);
 
-	glDisableVertexAttribArray(0);
+	glBindVertexArray(0);
 
 	return 0;
 }
 
-int s_render_legend_labels(int fbw, int fbh, const s_stft_t *stft)
+int s_render_legend_labels(const s_stft_t *stft)
 {
 	int r;
 	FT_Library ft;
@@ -234,7 +222,7 @@ int s_render_legend_labels(int fbw, int fbh, const s_stft_t *stft)
 
 	// Get the viewport parameters we'll use to render.
 
-	view = s_get_spectrogram_viewport(fbw, fbh);
+	view = s_get_spectrogram_viewport();
 
 	// Get the frequency and duration labels.
 
@@ -267,7 +255,7 @@ done:
 	return ret;
 }
 
-int s_render_stft(int fbw, int fbh, const s_stft_t *stft)
+int s_render_stft(const s_stft_t *stft)
 {
 	return 0;
 }

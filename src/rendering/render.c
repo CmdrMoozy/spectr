@@ -57,11 +57,16 @@ static size_t s_vbo_list_length = 0;
 int s_render(const s_stft_t *stft)
 {
 	int r;
-	s_spectrogram_viewport view = s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
+	s_spectrogram_viewport view =
+		s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
+
+	int vieww = view.xmax - view.xmin - 1;
+	int viewh = view.ymax - view.ymin - 1;
+	int viewa = vieww * viewh;
 
 	// Allocate the list of VBO objects we'll use.
 
-	s_vbo_list_length = 1;
+	s_vbo_list_length = 2;
 	s_vbo_list = (s_vbo_t *) malloc(sizeof(s_vbo_t) * s_vbo_list_length);
 
 	if(s_vbo_list == NULL)
@@ -87,12 +92,29 @@ int s_render(const s_stft_t *stft)
 	s_vbo_list[0].usage = GL_STATIC_DRAW;
 	s_vbo_list[0].mode = GL_LINES;
 
+	// Initialize the structure for the spectrogram itself.
+
+	s_vbo_list[1].data = (GLfloat *) malloc(sizeof(GLfloat) * viewa * 2);
+
+	if(s_vbo_list[1].data == NULL)
+	{
+		free(s_vbo_list);
+		s_vbo_list = NULL;
+
+		return -ENOMEM;
+	}
+
+	s_vbo_list[1].length = viewa * 2;
+	s_vbo_list[1].usage = GL_DYNAMIC_DRAW;
+	s_vbo_list[1].mode = GL_POINTS;
+
 	// Initialize the GL context, and start the rendering loop.
 
 	r = s_init_gl(s_render_loop, s_vbo_list, s_vbo_list_length, stft);
 
 	// Free our VBO's.
 
+	free(s_vbo_list[1].data);
 	free(s_vbo_list);
 	s_vbo_list = NULL;
 

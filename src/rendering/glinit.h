@@ -24,8 +24,8 @@
 
 #include "types.h"
 
-extern int s_init_gl(int (*fptr)(int, int, const s_stft_t *),
-	const s_stft_t *stft);
-extern int s_gl_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a);
+extern int s_init_gl(int (*)(int, int, const s_stft_t *),
+	s_vbo_t *, size_t, const s_stft_t *);
+extern int s_gl_color(GLfloat, GLfloat, GLfloat, GLfloat);
 
 #endif

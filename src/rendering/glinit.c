@@ -25,6 +25,8 @@
 
 int s_init_program();
 int s_set_uniforms();
+int s_init_vbo(s_vbo_t *, size_t);
+int s_init_vao();
 
 /*!
  * \brief This is the source code for our vertex shader.
@@ -64,16 +66,24 @@ static const GLchar *s_fragment_shader_src = {
 static GLuint s_program = 0;
 
 /*!
+ * \brief Stores our OpenGL vertex array object.
+ */
+static GLuint s_vao = 0;
+
+/*!
  * This is a utility function which initializes OpenGL in a way that it's ready
  * to render 2D graphics. We then call the given user-supplied function,
  * passing it the framebuffer width, height, and the given STFT instance, to
  * do the actual rendering.
  *
  * \param fptr The function to call after initialization to do the rendering.
+ * \param vbo The list of s_vbo_t objects to initialize.
+ * \param vbol The number of objects in the VBO list.
  * \param stft The STFT instance to pass to the given function.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_init_gl(int (*fptr)(int, int, const s_stft_t *), const s_stft_t *stft)
+int s_init_gl(int (*fptr)(int, int, const s_stft_t *),
+	s_vbo_t *vbo, size_t vbol, const s_stft_t *stft)
 {
 	int r;
 	GLFWwindow *window;
@@ -96,6 +106,22 @@ int s_init_gl(int (*fptr)(int, int, const s_stft_t *), const s_stft_t *stft)
 	glfwMakeContextCurrent(window);
 
 	r = s_init_program();
+
+	if(r < 0)
+	{
+		glfwTerminate();
+		return -EINVAL;
+	}
+
+	r = s_init_vbo(vbo, vbol);
+
+	if(r < 0)
+	{
+		glfwTerminate();
+		return -EINVAL;
+	}
+
+	r = s_init_vao();
 
 	if(r < 0)
 	{
@@ -260,6 +286,40 @@ int s_set_uniforms(int width, int height)
 		return r;
 
 	// Done!
+
+	return 0;
+}
+
+/*!
+ * This function initializes all of the vertex buffer objects in the given list of
+ * s_vbo_t structures. This function sets the "obj" field in each structure, from
+ * glGenBuffers.
+ *
+ * \param o The list of s_vbo_t structures to initialize.
+ * \param l The number of VBO's in the given list.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_init_vbo(s_vbo_t *o, size_t l)
+{
+	size_t i;
+
+	for(i = 0; i < l; ++i)
+	{
+		glGenBuffers(1, &(o->obj));
+
+		glBindBuffer(GL_ARRAY_BUFFER, o->obj);
+		glBufferData(GL_ARRAY_BUFFER, o->length * sizeof(GLfloat),
+			o->data, o->usage);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	}
+
+	return 0;
+}
+
+int s_init_vao()
+{
+	glGenVertexArrays(1, &s_vao);
+	glBindVertexArray(s_vao);
 
 	return 0;
 }

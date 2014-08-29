@@ -22,6 +22,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include <GLFW/glfw3.h>
+#include <GL/gl.h>
+
 /*!
  * \brief This enum contains all of our supported file types.
  */
@@ -109,5 +112,16 @@ typedef struct s_spectrogram_viewport
 	int xmax;
 	int ymax;
 } s_spectrogram_viewport;
+
+/*!
+ * \brief This structure stores the state of an OpenGL VBO.
+ */
+typedef struct s_vbo_t
+{
+	GLuint obj;
+	GLfloat *data;
+	size_t length;
+	GLenum usage;
+} s_vbo_t;
 
 #endif

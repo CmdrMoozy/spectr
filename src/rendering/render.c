@@ -46,7 +46,7 @@ int s_render_stft(int, int, const s_stft_t *);
  */
 int s_render(const s_stft_t *stft)
 {
-	return s_init_gl(s_render_loop, stft);
+	return s_init_gl(s_render_loop, NULL, 0, stft);
 }
 
 /*!

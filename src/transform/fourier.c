@@ -248,6 +248,7 @@ int s_init_stft(s_stft_t **stft)
 	(*stft)->raw_stat.bit_depth = 0;
 	(*stft)->raw_stat.sample_rate = 0;
 
+	(*stft)->window = 0;
 	(*stft)->length = 0;
 	(*stft)->dfts = NULL;
 
@@ -298,6 +299,7 @@ int s_init_stft_result(s_stft_t *stft, const s_raw_audio_t *raw, size_t w)
 	stft->raw_length = raw->samples_length;
 	stft->raw_stat = raw->stat;
 
+	stft->window = w;
 	stft->length = raw->samples_length / w;
 
 	stft->dfts = malloc(sizeof(s_dft_t *) * stft->length);

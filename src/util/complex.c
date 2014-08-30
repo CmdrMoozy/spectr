@@ -103,6 +103,20 @@ void s_cexp(s_complex_t *r, double x)
 }
 
 /*!
+ * This is a very basic function which returns the magnitude of the given
+ * complex number. This is equivalent to the concept of the magnitude of a
+ * 2-vector, with the real and imaginary parts of the given value making up the
+ * vector components.
+ *
+ * \param c The complex number to compute the magnitude of.
+ * \return The magnitude of the given complex number.
+ */
+double s_magnitude(const s_complex_t *c)
+{
+	return sqrt(c->r * c->r + c->i * c->i);
+}
+
+/*!
  * This is a convenience function which prints the given complex value to
  * standard output, using s_cfprintf.
  *

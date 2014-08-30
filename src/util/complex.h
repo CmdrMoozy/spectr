@@ -32,6 +32,8 @@ extern void s_cmul_r(s_complex_t *, const s_complex_t *, double);
 
 extern void s_cexp(s_complex_t *, double x);
 
+extern double s_magnitude(const s_complex_t *);
+
 extern int s_cprintf(const s_complex_t *);
 extern int s_cfprintf(FILE *, const s_complex_t *);
 

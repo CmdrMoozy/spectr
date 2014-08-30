@@ -19,6 +19,7 @@
 #include "render.h"
 
 #include <errno.h>
+#include <math.h>
 #include <linux/limits.h>
 
 #include <ft2build.h>
@@ -28,10 +29,18 @@
 #include "config.h"
 #include "decoding/stat.h"
 #include "rendering/glinit.h"
+#include "util/complex.h"
 #include "util/fonts.h"
 
 int s_render_loop(const s_stft_t *);
-int s_set_vec3(GLfloat *, size_t, size_t, GLfloat, GLfloat, GLfloat);
+size_t s_get_x_idx(size_t, const s_spectrogram_viewport *, const s_stft_t *);
+size_t s_get_y_idx(size_t, const s_spectrogram_viewport *, const s_stft_t *);
+GLfloat s_get_x_coord(size_t, const s_spectrogram_viewport *,
+	const s_stft_t *);
+GLfloat s_get_y_coord(size_t, const s_spectrogram_viewport *,
+	const s_stft_t *);
+GLfloat s_get_z_coord(size_t, size_t, const s_stft_t *);
+void s_set_vec3(GLfloat *, size_t, size_t, size_t, GLfloat, GLfloat, GLfloat);
 int s_alloc_stft_vbo(s_vbo_t *, const s_stft_t *);
 int s_render_legend_frame();
 int s_render_legend_labels(const s_stft_t *);
@@ -176,14 +185,66 @@ int s_render_loop(const s_stft_t *stft)
 	return 0;
 }
 
-int s_set_vec3(GLfloat *arr, size_t px, size_t py,
+size_t s_get_x_idx(size_t stfti, const s_spectrogram_viewport *view,
+	const s_stft_t *stft)
+{
+	double x = ((double) view->w) / ((double) stft->length);
+	x = x * ((double) stfti);
+	x = floor(x);
+
+	return (size_t) x;
+}
+
+size_t s_get_y_idx(size_t dfti, const s_spectrogram_viewport *view,
+	const s_stft_t *stft)
+{
+	double y = ((double) view->h) / ((double) stft->window);
+	y = y * ((double) dfti);
+	y = floor(y);
+
+	return (size_t) y;
+}
+
+GLfloat s_get_x_coord(size_t stfti, const s_spectrogram_viewport *view,
+	const s_stft_t *stft)
+{
+	GLfloat x = ((GLfloat) view->w) / ((GLfloat) stft->length);
+	x = x * ((GLfloat) stfti);
+	x = x + ((GLfloat) view->xmin) + 1.0f;
+
+	return x;
+}
+
+GLfloat s_get_y_coord(size_t dfti, const s_spectrogram_viewport *view,
+	const s_stft_t *stft)
+{
+	GLfloat y = ((GLfloat) view->h) / ((GLfloat) stft->window);
+	y = y * ((GLfloat) dfti);
+	y = y + ((GLfloat) view->ymin) + 1.0f;
+
+	return y;
+}
+
+GLfloat s_get_z_coord(size_t stfti, size_t dfti, const s_stft_t *stft)
+{
+	return (GLfloat) s_magnitude(&(stft->dfts[stfti]->dft[dfti]));
+}
+
+void s_set_vec3(GLfloat *arr, size_t arrw, size_t ix, size_t iy,
 	GLfloat x, GLfloat y, GLfloat z)
 {
-	return 0;
+	size_t idx = arrw * iy + ix;
+
+	arr[idx] = x;
+	arr[idx + 1] = y;
+	arr[idx + 2] = z;
 }
 
 int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 {
+	size_t stfti;
+	size_t dfti;
+
 	// Get the dimensions of the view we're rendering.
 
 	s_spectrogram_viewport view =
@@ -194,7 +255,7 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	 * 3-vectors of (time, frequency, magnitude).
 	 */
 
-	vbo->data = (GLfloat *) malloc(sizeof(GLfloat) * view.w * view.h * 3);
+	vbo->data = (GLfloat *) calloc(view.w * view.h * 3, sizeof(GLfloat));
 
 	if(vbo->data == NULL)
 		return -ENOMEM;
@@ -205,7 +266,20 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 
 	// Compute the value of each point we'll render.
 
-
+	for(stfti = 0; stfti < stft->length; ++stfti)
+	{
+		for(dfti = 0; dfti < stft->dfts[stfti]->length / 2; ++dfti)
+		{
+			s_set_vec3(
+				vbo->data,
+				view.w,
+				s_get_x_idx(stfti, &view, stft),
+				s_get_y_idx(dfti, &view, stft),
+				s_get_x_coord(stfti, &view, stft),
+				s_get_y_coord(dfti, &view, stft),
+				s_get_z_coord(stfti, dfti, stft));
+		}
+	}
 
 	// Done!
 

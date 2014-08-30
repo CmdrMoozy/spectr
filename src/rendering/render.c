@@ -32,10 +32,10 @@
 
 int s_render_loop(const s_stft_t *);
 s_spectrogram_viewport s_get_spectrogram_viewport();
-void s_gl_legend_color();
+int s_alloc_stft_vbo(s_vbo_t *, const s_stft_t *);
 int s_render_legend_frame();
 int s_render_legend_labels(const s_stft_t *);
-int s_render_stft(const s_stft_t *);
+int s_render_stft();
 
 /*!
  * \brief This list stores all of the VBO's we use for rendering.
@@ -56,13 +56,11 @@ static size_t s_vbo_list_length = 0;
  */
 int s_render(const s_stft_t *stft)
 {
+	int ret = 0;
 	int r;
+
 	s_spectrogram_viewport view =
 		s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
-
-	int vieww = view.xmax - view.xmin - 1;
-	int viewh = view.ymax - view.ymin - 1;
-	int viewa = vieww * viewh;
 
 	// Allocate the list of VBO objects we'll use.
 
@@ -70,7 +68,10 @@ int s_render(const s_stft_t *stft)
 	s_vbo_list = (s_vbo_t *) malloc(sizeof(s_vbo_t) * s_vbo_list_length);
 
 	if(s_vbo_list == NULL)
-		return -ENOMEM;
+	{
+		ret = -ENOMEM;
+		goto done;
+	}
 
 	// Set the values of the legend frame vertices.
 
@@ -94,33 +95,25 @@ int s_render(const s_stft_t *stft)
 
 	// Initialize the structure for the spectrogram itself.
 
-	s_vbo_list[1].data = (GLfloat *) malloc(sizeof(GLfloat) * viewa * 2);
+	r = s_alloc_stft_vbo(&(s_vbo_list[1]), stft);
 
-	if(s_vbo_list[1].data == NULL)
+	if(r < 0)
 	{
-		free(s_vbo_list);
-		s_vbo_list = NULL;
-
-		return -ENOMEM;
+		ret = r;
+		goto err_after_vbo_alloc;
 	}
-
-	s_vbo_list[1].length = viewa * 2;
-	s_vbo_list[1].usage = GL_DYNAMIC_DRAW;
-	s_vbo_list[1].mode = GL_POINTS;
 
 	// Initialize the GL context, and start the rendering loop.
 
 	r = s_init_gl(s_render_loop, s_vbo_list, s_vbo_list_length, stft);
 
-	// Free our VBO's.
+	// Clean up and return.
 
 	free(s_vbo_list[1].data);
+err_after_vbo_alloc:
 	free(s_vbo_list);
-	s_vbo_list = NULL;
-
-	// Done.
-
-	return r;
+done:
+	return ret;
 }
 
 /*!
@@ -148,7 +141,7 @@ int s_render_loop(const s_stft_t *stft)
 
 	// Render the actual graphical STFT output.
 
-	r = s_render_stft(stft);
+	r = s_render_stft();
 
 	if(r < 0)
 		return r;
@@ -178,6 +171,40 @@ s_spectrogram_viewport s_get_spectrogram_viewport()
 	v.ymax = S_WINDOW_H - 30;
 
 	return v;
+}
+
+int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
+{
+	// Get the dimensions of the view we're rendering.
+
+	s_spectrogram_viewport view =
+		s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
+
+	int vieww = view.xmax - view.xmin - 1;
+	int viewh = view.ymax - view.ymin - 1;
+	int viewa = vieww * viewh;
+
+	/*
+	 * Allocate memory for the points. Note that spectrogram points are
+	 * 3-vectors of (time, frequency, magnitude).
+	 */
+
+	vbo->data = (GLfloat *) malloc(sizeof(GLfloat) * viewa * 3);
+
+	if(vbo->data == NULL)
+		return -ENOMEM;
+
+	vbo->length = viewa * 3;
+	vbo->usage = GL_STATIC_DRAW;
+	vbo->mode = GL_POINTS;
+
+	// Compute the value of each point we'll render.
+
+
+
+	// Done!
+
+	return 0;
 }
 
 /*!
@@ -277,7 +304,7 @@ done:
 	return ret;
 }
 
-int s_render_stft(const s_stft_t *stft)
+int s_render_stft()
 {
 	return 0;
 }

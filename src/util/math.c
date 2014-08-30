@@ -31,3 +31,23 @@ int32_t s_mono_sample(s_stereo_sample_t s)
 	int64_t mono = ( ((int64_t) s.l) + ((int64_t) s.r) ) >> 1;
 	return (int32_t) mono;
 }
+
+/*!
+ * This is a very simple function which scales the value v, which is currenty
+ * in the range [omin, omax] to the range [nmin, nmax].
+ *
+ * \param omin The old minimum (inclusive).
+ * \param omax The old maximum (inclusive).
+ * \param nmin The new minimum (inclusive).
+ * \param nmax The new maximum (inclusive).
+ * \param v The value to scale.
+ * \return The scaled value.
+ */
+double s_scale(double omin, double omax, double nmin, double nmax, double v)
+{
+	double nv = (nmax - nmin) * (v - omin);
+	nv /= (omax - omin);
+	nv += nmin;
+
+	return nv;
+}

@@ -24,5 +24,7 @@
 #include "types.h"
 
 extern int32_t s_mono_sample(s_stereo_sample_t);
+extern double s_scale(double omin, double omax,
+	double nmin, double nmax, double v);
 
 #endif

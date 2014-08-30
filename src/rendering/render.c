@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <math.h>
 #include <linux/limits.h>
+#include <fenv.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -31,20 +32,15 @@
 #include "rendering/glinit.h"
 #include "util/complex.h"
 #include "util/fonts.h"
+#include "util/math.h"
 
-int s_render_loop(const s_stft_t *);
-size_t s_get_x_idx(size_t, const s_spectrogram_viewport *, const s_stft_t *);
-size_t s_get_y_idx(size_t, const s_spectrogram_viewport *, const s_stft_t *);
-GLfloat s_get_x_coord(size_t, const s_spectrogram_viewport *,
-	const s_stft_t *);
-GLfloat s_get_y_coord(size_t, const s_spectrogram_viewport *,
-	const s_stft_t *);
-GLfloat s_get_z_coord(size_t, size_t, const s_stft_t *);
-void s_set_vec3(GLfloat *, size_t, size_t, size_t, GLfloat, GLfloat, GLfloat);
+int s_render_loop(const s_stft_t *, GLuint *);
+void s_set_spectrogram_vec3(GLfloat *, size_t, size_t,
+	size_t, GLfloat, GLfloat, GLfloat);
 int s_alloc_stft_vbo(s_vbo_t *, const s_stft_t *);
-int s_render_legend_frame();
+int s_render_legend_frame(GLuint *);
 int s_render_legend_labels(const s_stft_t *);
-int s_render_stft();
+int s_render_stft(GLuint *);
 
 /*!
  * \brief This list stores all of the VBO's we use for rendering.
@@ -155,15 +151,16 @@ s_spectrogram_viewport s_get_spectrogram_viewport()
  * during each render loop. See s_init_gl for details.
  *
  * \param stft The STFT whose spectrogram should be rendered.
+ * \param vao The VAO which has been configured for each of our VBO's.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_render_loop(const s_stft_t *stft)
+int s_render_loop(const s_stft_t *stft, GLuint *vao)
 {
 	int r;
 
 	// Render the frame / legend around the output.
 
-	r = s_render_legend_frame();
+	r = s_render_legend_frame(vao);
 
 	if(r < 0)
 		return r;
@@ -175,7 +172,7 @@ int s_render_loop(const s_stft_t *stft)
 
 	// Render the actual graphical STFT output.
 
-	r = s_render_stft();
+	r = s_render_stft(vao);
 
 	if(r < 0)
 		return r;
@@ -185,70 +182,58 @@ int s_render_loop(const s_stft_t *stft)
 	return 0;
 }
 
-size_t s_get_x_idx(size_t stfti, const s_spectrogram_viewport *view,
-	const s_stft_t *stft)
-{
-	double x = ((double) view->w) / ((double) stft->length);
-	x = x * ((double) stfti);
-	x = floor(x);
-
-	return (size_t) x;
-}
-
-size_t s_get_y_idx(size_t dfti, const s_spectrogram_viewport *view,
-	const s_stft_t *stft)
-{
-	double y = ((double) view->h) / ((double) stft->window);
-	y = y * ((double) dfti);
-	y = floor(y);
-
-	return (size_t) y;
-}
-
-GLfloat s_get_x_coord(size_t stfti, const s_spectrogram_viewport *view,
-	const s_stft_t *stft)
-{
-	GLfloat x = ((GLfloat) view->w) / ((GLfloat) stft->length);
-	x = x * ((GLfloat) stfti);
-	x = x + ((GLfloat) view->xmin) + 1.0f;
-
-	return x;
-}
-
-GLfloat s_get_y_coord(size_t dfti, const s_spectrogram_viewport *view,
-	const s_stft_t *stft)
-{
-	GLfloat y = ((GLfloat) view->h) / ((GLfloat) stft->window);
-	y = y * ((GLfloat) dfti);
-	y = y + ((GLfloat) view->ymin) + 1.0f;
-
-	return y;
-}
-
-GLfloat s_get_z_coord(size_t stfti, size_t dfti, const s_stft_t *stft)
-{
-	return (GLfloat) s_magnitude(&(stft->dfts[stfti]->dft[dfti]));
-}
-
-void s_set_vec3(GLfloat *arr, size_t arrw, size_t ix, size_t iy,
+/*!
+ * This is a small convenience function which sets the values of a 3-vector
+ * at a given position in our list of spectrogram points.
+ *
+ * \param arr The list of spectrogram points.
+ * \param arrw The width of a "row" in the array; the maximum y value, incl.
+ * \param ix The X index of the pixel being set.
+ * \param iy The Y index of the pixel being set.
+ * \param x The X-component of the 3-vector.
+ * \param y The Y-component of the 3-vector.
+ * \param z The Z-component of the 3-vector.
+ */
+void s_set_spectrogram_vec3(GLfloat *arr, size_t arrw, size_t ix, size_t iy,
 	GLfloat x, GLfloat y, GLfloat z)
 {
 	size_t idx = arrw * iy + ix;
+	idx = idx * 3;
 
 	arr[idx] = x;
 	arr[idx + 1] = y;
 	arr[idx + 2] = z;
 }
 
+/*!
+ * This function allocates and computes the vertices for the buffer which will
+ * render our spectrogram.
+ *
+ * \param vbo The VBO being populated with spectrogram vertices.
+ * \param stft The STFT data being rendered.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
 int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 {
+	int r;
+
 	size_t stfti;
 	size_t dfti;
+
+	double x;
+	double y;
 
 	// Get the dimensions of the view we're rendering.
 
 	s_spectrogram_viewport view =
 		s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
+
+	// Set our rounding mode.
+
+	r = fesetround(FE_TONEAREST);
+
+	if(r != 0)
+		return -EINVAL;
 
 	/*
 	 * Allocate memory for the points. Note that spectrogram points are
@@ -270,14 +255,32 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	{
 		for(dfti = 0; dfti < stft->dfts[stfti]->length / 2; ++dfti)
 		{
-			s_set_vec3(
+			// Get the X and Y values in the right range.
+
+			x = s_scale(0, stft->length, view.xmin + 1,
+				view.xmax - 1, stfti);
+			y = s_scale(0, stft->dfts[stfti]->length / 2 - 1,
+				view.ymin + 1, view.ymax - 1, dfti);
+
+			x = rint(x);
+			y = rint(y);
+
+			x = fmax(x, view.xmin + 1);
+			x = fmin(x, view.xmax - 1);
+
+			y = fmax(y, view.ymin + 1);
+			y = fmin(y, view.ymax - 1);
+
+			// Set the value in our list.
+
+			s_set_spectrogram_vec3(
 				vbo->data,
 				view.w,
-				s_get_x_idx(stfti, &view, stft),
-				s_get_y_idx(dfti, &view, stft),
-				s_get_x_coord(stfti, &view, stft),
-				s_get_y_coord(dfti, &view, stft),
-				s_get_z_coord(stfti, dfti, stft));
+				x - (view.xmin + 1),
+				y - (view.ymin + 1),
+				x,
+				y,
+				0.0f /*s_magnitude(&(stft->dfts[stfti]->dft[dfti]))*/ );
 		}
 	}
 
@@ -291,17 +294,20 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
  * frame around the spectrogram, as well as the frequency and time labels for
  * the loaded track.
  *
+ * \param vao The VAO which contains our legend frame VBO's state.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_render_legend_frame()
+int s_render_legend_frame(GLuint *vao)
 {
-	glBindBuffer(GL_ARRAY_BUFFER, s_vbo_list[0].obj);
+	int r;
 
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	r = s_gl_color(1.0f, 1.0f, 1.0f, 1.0f);
 
+	if(r < 0)
+		return r;
+
+	glBindVertexArray(vao[0]);
 	glDrawArrays(s_vbo_list[0].mode, 0, s_vbo_list[0].length / 3);
-
 	glBindVertexArray(0);
 
 	return 0;
@@ -383,7 +389,25 @@ done:
 	return ret;
 }
 
-int s_render_stft()
+/*!
+ * This function renders our spectrogram by binding the given VAO which is
+ * associated with its VBO and then drawing the points to the screen.
+ *
+ * \param vao The VAO containing our spectrogram's draw state information.
+ * \return 0 on success, or an error number otherwise.
+ */
+int s_render_stft(GLuint *vao)
 {
+	int r;
+
+	r = s_gl_color(1.0f, 0.0f, 0.0f, 1.0f);
+
+	if(r < 0)
+		return r;
+
+	glBindVertexArray(vao[1]);
+	glDrawArrays(s_vbo_list[1].mode, 0, s_vbo_list[1].length / 3);
+	glBindVertexArray(0);
+
 	return 0;
 }

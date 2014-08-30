@@ -19,13 +19,13 @@
 #include "glinit.h"
 
 #include <errno.h>
+#include <stdlib.h>
 
 #include "config.h"
 
 int s_init_program();
 int s_set_uniforms();
 int s_init_vbo(s_vbo_t *, size_t);
-int s_init_vao();
 
 /*!
  * \brief This is the source code for our vertex shader.
@@ -71,7 +71,7 @@ static GLuint s_program = 0;
 /*!
  * \brief Stores our OpenGL vertex array object.
  */
-static GLuint s_vao = 0;
+static GLuint *s_vao;
 
 /*!
  * This is a utility function which initializes OpenGL in a way that it's ready
@@ -88,7 +88,7 @@ static GLuint s_vao = 0;
  * \param stft The STFT instance to pass to the given function.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_init_gl(int (*fptr)(const s_stft_t *),
+int s_init_gl(int (*fptr)(const s_stft_t *, GLuint *),
 	s_vbo_t *vbo, size_t vbol, const s_stft_t *stft)
 {
 	int r;
@@ -126,14 +126,6 @@ int s_init_gl(int (*fptr)(const s_stft_t *),
 		return -EINVAL;
 	}
 
-	r = s_init_vao();
-
-	if(r < 0)
-	{
-		glfwTerminate();
-		return -EINVAL;
-	}
-
 	while(!glfwWindowShouldClose(window))
 	{
 		// Initialize the GL viewport.
@@ -155,7 +147,7 @@ int s_init_gl(int (*fptr)(const s_stft_t *),
 
 		// Call the user-provided rendering function.
 
-		r = fptr(stft);
+		r = fptr(stft, s_vao);
 
 		if(r < 0)
 		{
@@ -297,6 +289,9 @@ int s_set_uniforms()
  * of s_vbo_t structures. This function sets the "obj" field in each structure,
  * from glGenBuffers.
  *
+ * NOTE: This function also initializes a VAO for each VBO, keeping track of
+ * its rendering state.
+ *
  * \param o The list of s_vbo_t structures to initialize.
  * \param l The number of VBO's in the given list.
  * \return 0 on success, or an error number if something goes wrong.
@@ -307,27 +302,31 @@ int s_init_vbo(s_vbo_t *o, size_t l)
 
 	for(i = 0; i < l; ++i)
 	{
-		glGenBuffers(1, &(o->obj));
+		glGenBuffers(1, &(o[i].obj));
 
-		glBindBuffer(GL_ARRAY_BUFFER, o->obj);
-		glBufferData(GL_ARRAY_BUFFER, o->length * sizeof(GLfloat),
-			o->data, o->usage);
+		glBindBuffer(GL_ARRAY_BUFFER, o[i].obj);
+		glBufferData(GL_ARRAY_BUFFER, o[i].length * sizeof(GLfloat),
+			o[i].data, o[i].usage);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 	}
 
-	return 0;
-}
+	s_vao = calloc(l, sizeof(GLuint));
 
-/*!
- * This function initializes our vertex array object.
- *
- * \return 0 on success, or an error number if something goes wrong.
- */
-int s_init_vao()
-{
-	glGenVertexArrays(1, &s_vao);
-	glBindVertexArray(s_vao);
+	if(s_vao == NULL)
+		return -ENOMEM;
+
+	for(i = 0; i < l; ++i)
+	{
+		glGenVertexArrays(1, &(s_vao[i]));
+		glBindVertexArray(s_vao[i]);
+
+		glBindBuffer(GL_ARRAY_BUFFER, o[i].obj);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glBindVertexArray(0);
+	}
 
 	return 0;
 }

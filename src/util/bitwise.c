@@ -65,3 +65,29 @@ int s_is_pow_2(uint64_t v)
 {
 	return (v && !s_rmo_off(v));
 }
+
+/*!
+ * This function returns the largest power of two less than or equal to the
+ * given value. More specifically:
+ *
+ *   s_flp2(0) = 0
+ *   s_flp2(x) = 2 ^ floor(lg(x))
+ *
+ * This algorithm propagates the leftmost 1-bit in order to turn off all bits
+ * beside that one. This algorithm comes from "Hacker's Delight" Chapter 3 -
+ * Power-of-2 Boundaries.
+ *
+ * \param v The value to power-of-two floor.
+ * \return The floored value.
+ */
+uint64_t s_flp2(uint64_t v)
+{
+	v = v | (v >> 1);
+	v = v | (v >> 2);
+	v = v | (v >> 4);
+	v = v | (v >> 8);
+	v = v | (v >> 16);
+	v = v | (v >> 32);
+
+	return v - (v >> 1);
+}

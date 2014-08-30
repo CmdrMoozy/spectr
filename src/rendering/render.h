@@ -22,5 +22,6 @@
 #include "types.h"
 
 extern int s_render(const s_stft_t *stft);
+s_spectrogram_viewport s_get_spectrogram_viewport();
 
 #endif

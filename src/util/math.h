@@ -23,6 +23,7 @@
 
 #include "types.h"
 
+extern int s_get_window_size(size_t *, size_t, size_t);
 extern int32_t s_mono_sample(s_stereo_sample_t);
 
 #endif

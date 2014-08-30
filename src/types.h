@@ -111,6 +111,9 @@ typedef struct s_spectrogram_viewport
 	int ymin;
 	int xmax;
 	int ymax;
+
+	int w;
+	int h;
 } s_spectrogram_viewport;
 
 /*!

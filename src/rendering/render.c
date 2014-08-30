@@ -31,7 +31,7 @@
 #include "util/fonts.h"
 
 int s_render_loop(const s_stft_t *);
-s_spectrogram_viewport s_get_spectrogram_viewport();
+int s_set_vec3(GLfloat *, size_t, size_t, GLfloat, GLfloat, GLfloat);
 int s_alloc_stft_vbo(s_vbo_t *, const s_stft_t *);
 int s_render_legend_frame();
 int s_render_legend_labels(const s_stft_t *);
@@ -117,6 +117,31 @@ done:
 }
 
 /*!
+ * This function computes the spectrogram viewport we're using from the given
+ * framebuffer width and height values (from glfwGetFramebufferSize()).
+ *
+ * The returned structure should be used to render our spectrogram, to avoid
+ * scattering various "magic numbers" throughout the code.
+ *
+ * \return The spectrogram viewport for the given framebuffer.
+ */
+s_spectrogram_viewport s_get_spectrogram_viewport()
+{
+	s_spectrogram_viewport v;
+
+	v.xmin = 75;
+	v.ymin = 5;
+
+	v.xmax = S_WINDOW_W - 5;
+	v.ymax = S_WINDOW_H - 30;
+
+	v.w = v.xmax - v.xmin - 1;
+	v.h = v.ymax - v.ymin - 1;
+
+	return v;
+}
+
+/*!
  * This function is passed to our OpenGL initialization function, and is called
  * during each render loop. See s_init_gl for details.
  *
@@ -151,26 +176,10 @@ int s_render_loop(const s_stft_t *stft)
 	return 0;
 }
 
-/*!
- * This function computes the spectrogram viewport we're using from the given
- * framebuffer width and height values (from glfwGetFramebufferSize()).
- *
- * The returned structure should be used to render our spectrogram, to avoid
- * scattering various "magic numbers" throughout the code.
- *
- * \return The spectrogram viewport for the given framebuffer.
- */
-s_spectrogram_viewport s_get_spectrogram_viewport()
+int s_set_vec3(GLfloat *arr, size_t px, size_t py,
+	GLfloat x, GLfloat y, GLfloat z)
 {
-	s_spectrogram_viewport v;
-
-	v.xmin = 75;
-	v.ymin = 5;
-
-	v.xmax = S_WINDOW_W - 5;
-	v.ymax = S_WINDOW_H - 30;
-
-	return v;
+	return 0;
 }
 
 int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
@@ -180,21 +189,17 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	s_spectrogram_viewport view =
 		s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
 
-	int vieww = view.xmax - view.xmin - 1;
-	int viewh = view.ymax - view.ymin - 1;
-	int viewa = vieww * viewh;
-
 	/*
 	 * Allocate memory for the points. Note that spectrogram points are
 	 * 3-vectors of (time, frequency, magnitude).
 	 */
 
-	vbo->data = (GLfloat *) malloc(sizeof(GLfloat) * viewa * 3);
+	vbo->data = (GLfloat *) malloc(sizeof(GLfloat) * view.w * view.h * 3);
 
 	if(vbo->data == NULL)
 		return -ENOMEM;
 
-	vbo->length = viewa * 3;
+	vbo->length = view.w * view.h * 3;
 	vbo->usage = GL_STATIC_DRAW;
 	vbo->mode = GL_POINTS;
 

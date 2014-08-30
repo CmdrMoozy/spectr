@@ -26,6 +26,7 @@
 #include "decoding/raw.h"
 #include "rendering/render.h"
 #include "transform/fourier.h"
+#include "util/math.h"
 
 #ifdef SPECTR_DEBUG
 	#include <assert.h>
@@ -34,7 +35,6 @@
 	#include <sys/time.h>
 
 	#include "decoding/stat.h"
-	#include "util/math.h"
 #endif
 
 void s_print_error(int);
@@ -48,6 +48,8 @@ int main(int argc, char *argv[])
 	int ret = EXIT_SUCCESS;
 	int r;
 	s_raw_audio_t *audio = NULL;
+	s_spectrogram_viewport viewport;
+	size_t window;
 	s_stft_t *stft = NULL;
 
 #ifdef SPECTR_DEBUG
@@ -132,6 +134,21 @@ int main(int argc, char *argv[])
 	elapsed = (double) prof.tv_sec;
 	elapsed += ((double) prof.tv_usec) / 1000000.0;
 	elapsed = -elapsed;
+#endif
+
+	viewport = s_get_spectrogram_viewport();
+
+	r = s_get_window_size(&window, viewport.w, audio->samples_length);
+
+	if(r < 0)
+	{
+		s_print_error(r);
+		ret = EXIT_FAILURE;
+		goto err_after_raw_alloc;
+	}
+
+#ifdef SPECTR_DEBUG
+	printf("DEBUG: Window size: %" PRIu64 "\n", (uint64_t) window);
 #endif
 
 	r = s_stft(&stft, audio, S_WINDOW_SIZE);

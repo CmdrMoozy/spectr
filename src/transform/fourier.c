@@ -23,10 +23,6 @@
 #include <math.h>
 #include <string.h>
 
-#ifdef SPECTR_DEBUG
-	#include <sys/time.h>
-#endif
-
 #include "decoding/raw.h"
 #include "util/math.h"
 #include "util/bitwise.h"
@@ -186,42 +182,12 @@ int s_fft_part(s_dft_t **dft, const s_raw_audio_t *raw, size_t o, size_t l)
 {
 	int r;
 
-#ifdef SPECTR_DEBUG
-	struct timeval prof;
-	double elapsed;
-#endif
-
 	// The length of the input must be a power of two for the FFT.
-
-#ifdef SPECTR_DEBUG
-	gettimeofday(&prof, NULL);
-
-	elapsed = (double) prof.tv_sec;
-	elapsed += ((double) prof.tv_usec) / 1000000.0;
-	elapsed = -elapsed;
-#endif
 
 	if(!s_is_pow_2(l))
 		return -EINVAL;
 
-#ifdef SPECTR_DEBUG
-	gettimeofday(&prof, NULL);
-
-	elapsed += (double) prof.tv_sec;
-	elapsed += ((double) prof.tv_usec) / 1000000.0;
-
-	printf("\tDEBUG: Power-of-two test took: %f sec\n", elapsed);
-#endif
-
 	// Allocate space for the output values.
-
-#ifdef SPECTR_DEBUG
-	gettimeofday(&prof, NULL);
-
-	elapsed = (double) prof.tv_sec;
-	elapsed += ((double) prof.tv_usec) / 1000000.0;
-	elapsed = -elapsed;
-#endif
 
 	s_free_dft(dft);
 
@@ -232,24 +198,7 @@ int s_fft_part(s_dft_t **dft, const s_raw_audio_t *raw, size_t o, size_t l)
 
 	s_init_dft_result(*dft, l);
 
-#ifdef SPECTR_DEBUG
-	gettimeofday(&prof, NULL);
-
-	elapsed += (double) prof.tv_sec;
-	elapsed += ((double) prof.tv_usec) / 1000000.0;
-
-	printf("\tDEBUG: Allocating memory took: %f sec\n", elapsed);
-#endif
-
 	// Compute the DFT using our FFT algorithm.
-
-#ifdef SPECTR_DEBUG
-	gettimeofday(&prof, NULL);
-
-	elapsed = (double) prof.tv_sec;
-	elapsed += ((double) prof.tv_usec) / 1000000.0;
-	elapsed = -elapsed;
-#endif
 
 	r = s_fft_r(*dft, o, raw, 1, o, l);
 
@@ -258,15 +207,6 @@ int s_fft_part(s_dft_t **dft, const s_raw_audio_t *raw, size_t o, size_t l)
 		s_free_dft(dft);
 		return r;
 	}
-
-#ifdef SPECTR_DEBUG
-	gettimeofday(&prof, NULL);
-
-	elapsed += (double) prof.tv_sec;
-	elapsed += ((double) prof.tv_usec) / 1000000.0;
-
-	printf("\tDEBUG: s_fft_r took: %f sec\n", elapsed);
-#endif
 
 	return 0;
 }
@@ -441,12 +381,6 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 	int r;
 	size_t i;
 
-#ifdef SPECTR_DEBUG
-	struct timeval prof;
-	double elapsed;
-	double percent;
-#endif
-
 	// Allocate space for the result.
 
 	s_free_stft(stft);
@@ -468,18 +402,6 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 
 	for(i = 0; i < (*stft)->length; ++i)
 	{
-#ifdef SPECTR_DEBUG
-	percent = (1.0 / ((double) (*stft)->length)) * 100.0;
-
-	gettimeofday(&prof, NULL);
-
-	elapsed = (double) prof.tv_sec;
-	elapsed += ((double) prof.tv_usec) / 1000000.0;
-	elapsed = -elapsed;
-
-	printf("DEBUG: Timing s_fft_part:\n");
-#endif
-
 		// Compute the DFT of this raw audio window.
 
 		r = s_fft_part(&((*stft)->dfts[i]), raw, i * w, w);
@@ -489,16 +411,6 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 			s_free_stft(stft);
 			return r;
 		}
-
-#ifdef SPECTR_DEBUG
-	gettimeofday(&prof, NULL);
-
-	elapsed += (double) prof.tv_sec;
-	elapsed += ((double) prof.tv_usec) / 1000000.0;
-
-	printf("DEBUG: Computing %f%% of STFT took: %f sec\n\n",
-		percent, elapsed);
-#endif
 	}
 
 	// Done!

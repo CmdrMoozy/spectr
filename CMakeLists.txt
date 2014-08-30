@@ -62,6 +62,7 @@ SET(spectr_HEADERS
 	src/rendering/glinit.h
 	src/rendering/render.h
 
+	src/transform/attr.h
 	src/transform/fourier.h
 
 	src/util/bitwise.h
@@ -86,6 +87,7 @@ SET(spectr_SOURCES
 	src/rendering/glinit.c
 	src/rendering/render.c
 
+	src/transform/attr.c
 	src/transform/fourier.c
 
 	src/util/bitwise.c

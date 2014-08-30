@@ -16,13 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_UTIL_MATH_H
-#define INCLUDE_SPECTR_UTIL_MATH_H
+#ifndef INCLUDE_SPECTR_TRANSFORM_ATTR_H
+#define INCLUDE_SPECTR_TRANSFORM_ATTR_H
 
-#include <stdint.h>
+#include <stddef.h>
 
-#include "types.h"
-
-extern int32_t s_mono_sample(s_stereo_sample_t);
+extern int s_get_window_size(size_t *, size_t, size_t);
 
 #endif

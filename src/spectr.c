@@ -25,6 +25,7 @@
 #include "types.h"
 #include "decoding/raw.h"
 #include "rendering/render.h"
+#include "transform/attr.h"
 #include "transform/fourier.h"
 #include "util/math.h"
 

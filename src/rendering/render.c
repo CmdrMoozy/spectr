@@ -308,7 +308,6 @@ int s_render_legend_frame(GLuint *vao)
 
 	glBindVertexArray(vao[0]);
 	glDrawArrays(s_vbo_list[0].mode, 0, s_vbo_list[0].length / 3);
-	glBindVertexArray(0);
 
 	return 0;
 }
@@ -407,7 +406,6 @@ int s_render_stft(GLuint *vao)
 
 	glBindVertexArray(vao[1]);
 	glDrawArrays(s_vbo_list[1].mode, 0, s_vbo_list[1].length / 3);
-	glBindVertexArray(0);
 
 	return 0;
 }

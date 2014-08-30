@@ -324,8 +324,6 @@ int s_init_vbo(s_vbo_t *o, size_t l)
 		glBindBuffer(GL_ARRAY_BUFFER, o[i].obj);
 		glEnableVertexAttribArray(0);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-		glBindVertexArray(0);
 	}
 
 	return 0;

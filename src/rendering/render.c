@@ -75,21 +75,21 @@ int s_render(const s_stft_t *stft)
 
 	// Set the values of the legend frame vertices.
 
-	s_vbo_list[0].data = (GLfloat[16]) {
-		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin,
-		view.xmax, view.ymin,
+	s_vbo_list[0].data = (GLfloat[24]) {
+		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin, 0.0f,
+		view.xmax, view.ymin, 0.0f,
 
-		view.xmax, view.ymin,
-		view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE,
+		view.xmax, view.ymin, 0.0f,
+		view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE, 0.0f,
 
-		view.xmax, view.ymax,
-		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax,
+		view.xmax, view.ymax, 0.0f,
+		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax, 0.0f,
 
-		view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE,
-		view.xmin, view.ymin
+		view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE, 0.0f,
+		view.xmin, view.ymin, 0.0f
 	};
 
-	s_vbo_list[0].length = 16;
+	s_vbo_list[0].length = 24;
 	s_vbo_list[0].usage = GL_STATIC_DRAW;
 	s_vbo_list[0].mode = GL_LINES;
 
@@ -224,9 +224,9 @@ int s_render_legend_frame()
 	glBindBuffer(GL_ARRAY_BUFFER, s_vbo_list[0].obj);
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glDrawArrays(s_vbo_list[0].mode, 0, s_vbo_list[0].length / 2);
+	glDrawArrays(s_vbo_list[0].mode, 0, s_vbo_list[0].length / 3);
 
 	glBindVertexArray(0);
 

@@ -36,14 +36,14 @@ int s_init_vao();
  */
 static const GLchar *s_vertex_shader_src = {
 	"#version 440\n"
-	"in vec2 position;\n"
+	"in vec3 position;\n"
 	"uniform vec2 resolution;\n"
 	"void main()\n"
 	"{\n"
-		"\tvec2 zeroToOne = position / resolution;\n"
+		"\tvec2 zeroToOne = vec2(position[0], position[1]) / resolution;\n"
 		"\tvec2 zeroToTwo = zeroToOne * 2.0;\n"
 		"\tvec2 clipSpace = zeroToTwo - 1.0;\n"
-		"\tgl_Position = vec4(clipSpace * vec2(1.0, -1.0), 0.0, 1.0);\n"
+		"\tgl_Position = vec4(clipSpace * vec2(1.0, -1.0), position[2], 1.0);\n"
 	"}\n"
 };
 

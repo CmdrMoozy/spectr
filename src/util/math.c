@@ -23,6 +23,20 @@
 #include "util/bitwise.h"
 
 /*!
+ * This function returns the mono version of the given stereo sample. This is
+ * computed by averaging the two channels of the given sample, without
+ * overflowing.
+ *
+ * \param s The sample to convert to a mono sample.
+ * \return The mono sample value as close as possible to the given sample.
+ */
+int32_t s_mono_sample(s_stereo_sample_t s)
+{
+	int64_t mono = ( ((int64_t) s.l) + ((int64_t) s.r) ) >> 1;
+	return (int32_t) mono;
+}
+
+/*!
  * This function computes the STFT window size we should be using, assuming
  * that our spectrogram will be w pixels wide, and assuming that our input
  * audio file contains s samples.
@@ -49,18 +63,3 @@ int s_get_window_size(size_t *o, size_t w, size_t s)
 
 	return 0;
 }
-
-/*!
- * This function returns the mono version of the given stereo sample. This is
- * computed by averaging the two channels of the given sample, without
- * overflowing.
- *
- * \param s The sample to convert to a mono sample.
- * \return The mono sample value as close as possible to the given sample.
- */
-int32_t s_mono_sample(s_stereo_sample_t s)
-{
-	int64_t mono = ( ((int64_t) s.l) + ((int64_t) s.r) ) >> 1;
-	return (int32_t) mono;
-}
-

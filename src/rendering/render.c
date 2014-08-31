@@ -54,6 +54,11 @@ static s_vbo_t *s_vbo_list = NULL;
 static size_t s_vbo_list_length = 0;
 
 /*!
+ * \brief This stores our maximum DFT magnitude.
+ */
+static double s_max_magnitude = 0.0f;
+
+/*!
  * This function starts our OpenGL rendering loop, to render the given STFT's
  * spectrogram.
  *
@@ -82,17 +87,17 @@ int s_render(const s_stft_t *stft)
 	// Set the values of the legend frame vertices.
 
 	s_vbo_list[0].data = (GLfloat[24]) {
-		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin, 0.0f,
-		view.xmax, view.ymin, 0.0f,
+		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin, -1.0f,
+		view.xmax, view.ymin, -1.0f,
 
-		view.xmax, view.ymin, 0.0f,
-		view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE, 0.0f,
+		view.xmax, view.ymin, -1.0f,
+		view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE, -1.0f,
 
-		view.xmax, view.ymax, 0.0f,
-		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax, 0.0f,
+		view.xmax, view.ymax, -1.0f,
+		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax, -1.0f,
 
-		view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE, 0.0f,
-		view.xmin, view.ymin, 0.0f
+		view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE, -1.0f,
+		view.xmin, view.ymin, -1.0f
 	};
 
 	s_vbo_list[0].length = 24;
@@ -203,6 +208,7 @@ void s_set_spectrogram_vec3(GLfloat *arr, size_t arrw, size_t ix, size_t iy,
 
 	arr[idx] = x;
 	arr[idx + 1] = y;
+
 	arr[idx + 2] = z;
 }
 
@@ -279,11 +285,8 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 
 			// Deal with the Z value.
 
-			z = log10(s_magnitude(
-				&(stft->dfts[stfti]->dft[dfti])));
-
-			minz = fmin(minz, z);
-			maxz = fmax(maxz, z);
+			z = s_magnitude(&(stft->dfts[stfti]->dft[dfti]));
+			z = log10(pow(z, 2.0));
 
 			// Set the value in our list.
 
@@ -294,17 +297,37 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 				y - (view.ymin + 1),
 				x,
 				y,
-				s_magnitude(&(stft->dfts[stfti]->dft[dfti])));
+				z);
 		}
 	}
 
-	// Scale the Z values to the range [0, 100].
+	// Get the minimum and maximum Z values.
 
 	for(idx = 2; idx < vbo->length; idx += 3)
 	{
-		vbo->data[idx] = s_scale(
-			minz, maxz, 0.0, 100.0, vbo->data[idx]);
+		if(fabs(vbo->data[idx]) < 0.0001)
+			continue;
+
+		minz = fmin(minz, vbo->data[idx]);
+		maxz = fmax(maxz, vbo->data[idx]);
 	}
+
+	// Shift the values down so they are in the range [0, maxz].
+
+	for(idx = 2; idx < vbo->length; idx += 3)
+	{
+		if(fabs(vbo->data[idx]) < 0.0001)
+			continue;
+
+		vbo->data[idx] = vbo->data[idx] - minz;
+	}
+
+	maxz -= minz;
+	minz = 0.0;
+
+	// Set our maximum magnitude, so we can give it to the shader later.
+
+	s_max_magnitude = maxz;
 
 	// Done!
 
@@ -412,6 +435,13 @@ done:
  */
 int s_render_stft(GLuint *vao)
 {
+	int r;
+
+	r = s_set_max_magnitude(s_max_magnitude);
+
+	if(r < 0)
+		return r;
+
 	glBindVertexArray(vao[1]);
 	glDrawArrays(s_vbo_list[1].mode, 0, s_vbo_list[1].length / 3);
 

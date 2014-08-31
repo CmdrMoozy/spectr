@@ -26,5 +26,6 @@
 
 extern int s_init_gl(int (*)(const s_stft_t *, GLuint *),
 	s_vbo_t *, size_t, const s_stft_t *);
+extern int s_set_max_magnitude(GLfloat);
 
 #endif

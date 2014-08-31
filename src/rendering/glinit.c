@@ -21,6 +21,10 @@
 #include <errno.h>
 #include <stdlib.h>
 
+#ifdef SPECTR_DEBUG
+	#include <stdio.h>
+#endif
+
 #include "config.h"
 
 int s_init_program();
@@ -63,18 +67,45 @@ static const GLchar *s_vertex_shader_src = {
 static const GLchar *s_fragment_shader_src = {
 	"#version 440\n"
 
-	"out vec4 outputColor;\n"
+	"uniform float maxMagnitude;\n"
 	"varying float magnitude;\n"
 
 	"void main()\n"
 	"{\n"
-		"\tif(abs(magnitude) < 0.01)\n"
+		"\tif(magnitude < 0.0)\n"
 		"\t{\n"
-			"\t\toutputColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
+			"\t\tgl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
 		"\t}\n"
 		"\telse\n"
 		"\t{\n"
-			"\t\toutputColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
+			"\t\tvec4 color;\n"
+
+			"\t\tvec4 black = vec4(0.0, 0.0, 0.0, 1.0);\n"
+			"\t\tvec4 blue = vec4(0.0, 0.0, 0.25, 1.0);\n"
+			"\t\tvec4 purple = vec4(0.5, 0.0, 0.5, 1.0);\n"
+			"\t\tvec4 red = vec4(1.0, 0.0, 0.0, 1.0);\n"
+			"\t\tvec4 yellow = vec4(1.0, 1.0, 0.0, 1.0);\n"
+			"\t\tvec4 white = vec4(1.0, 1.0, 1.0, 1.0);\n"
+
+			"\t\tfloat step1 = 0.0;\n"
+			"\t\tfloat step2 = maxMagnitude * 0.2;\n"
+			"\t\tfloat step3 = maxMagnitude * 0.4;\n"
+			"\t\tfloat step4 = maxMagnitude * 0.6;\n"
+			"\t\tfloat step5 = maxMagnitude * 0.8;\n"
+			"\t\tfloat step6 = maxMagnitude;\n"
+
+			"\t\tcolor = mix(black, blue, "
+				"smoothstep(step1, step2, magnitude));\n"
+			"\t\tcolor = mix(color, purple, "
+				"smoothstep(step2, step3, magnitude));\n"
+			"\t\tcolor = mix(color, red, "
+				"smoothstep(step3, step4, magnitude));\n"
+			"\t\tcolor = mix(color, yellow, "
+				"smoothstep(step4, step5, magnitude));\n"
+			"\t\tcolor = mix(color, white, "
+				"smoothstep(step5, step6, magnitude));\n"
+
+			"\t\tgl_FragColor = color;\n"
 		"\t}\n"
 	"}\n"
 };
@@ -185,6 +216,28 @@ int s_init_gl(int (*fptr)(const s_stft_t *, GLuint *),
 }
 
 /*!
+ * This function sets the maximum magnitude value our fragment shader will
+ * account for. This determines how we will color points with a non-negative
+ * Z component.
+ *
+ * \param m The new maximum magnitude value.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_set_max_magnitude(GLfloat m)
+{
+	GLint uniform;
+
+	uniform = glGetUniformLocation(s_program, "maxMagnitude");
+
+	if(uniform == -1)
+		return 0;
+
+	glUniform1f(uniform, m);
+
+	return 0;
+}
+
+/*!
  * This function initializes the OpenGL program we will link our shaders into
  * for rendering our spectrogram.
  *
@@ -196,6 +249,11 @@ int s_init_program()
 	GLuint vertexShader;
 	GLuint fragmentShader;
 
+#ifdef SPECTR_DEBUG
+	GLchar buf[8192];
+	GLsizei bufl;
+#endif
+
 	// Initialize our vertex shader.
 
 	vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -205,7 +263,14 @@ int s_init_program()
 	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
 
 	if(status == GL_FALSE)
+	{
+#ifdef SPECTR_DEBUG
+		glGetShaderInfoLog(vertexShader, 8192, &bufl, buf);
+		printf("%s\n", buf);
+#endif
+
 		return -EINVAL;
+	}
 
 	// Initialize our fragment shader.
 
@@ -216,7 +281,14 @@ int s_init_program()
 	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
 
 	if(status == GL_FALSE)
+	{
+#ifdef SPECTR_DEBUG
+		glGetShaderInfoLog(fragmentShader, 8192, &bufl, buf);
+		printf("%s\n", buf);
+#endif
+
 		return -EINVAL;
+	}
 
 	// Initialize the program.
 
@@ -250,6 +322,7 @@ int s_init_program()
  */
 int s_set_uniforms()
 {
+	int r;
 	GLint resu;
 	GLfloat res[] = { S_WINDOW_W, S_WINDOW_H };
 
@@ -261,6 +334,13 @@ int s_set_uniforms()
 		return -EINVAL;
 
 	glUniform2fv(resu, 1, res);
+
+	// Set some default maximum magnitude.
+
+	r = s_set_max_magnitude(0.0f);
+
+	if(r < 0)
+		return r;
 
 	// Done!
 

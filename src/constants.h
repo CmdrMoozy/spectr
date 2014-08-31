@@ -16,31 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_CONFIG_H
-#define INCLUDE_SPECTR_CONFIG_H
+#ifndef INCLUDE_SPECTR_CONSTANTS_H
+#define INCLUDE_SPECTR_CONSTANTS_H
 
 /*
- * This is the window size which will be used for our application's STFT
- * computations. Given a typical input signal of 44,100 Hz, this is the largest
- * number which is a power of two which provides at least one DFT result per
- * each pixel in a 800-pixel-wide window.
+ * The number of microseconds in a second.
  */
-#define S_WINDOW_SIZE 16384
+#define S_SECOND_MICROSECONDS 1000000
 
 /*
- * This defines the number of frames we're willing to render each second.
+ * The number of nanoseconds in a second.
  */
-#define S_WINDOW_FPS 20
+#define S_SECOND_NANOSECONDS 1000000000
 
 /*
- * This is the size of the window we'll plot our result in.
+ * The number of nanoseconds in a microsecond.
  */
-#define S_WINDOW_W 800
-#define S_WINDOW_H 250
-
-/*
- * These values define some properties of our spectrogram legend.
- */
-#define S_SPEC_LGND_TICK_SIZE 7
+#define S_MICROSECOND_NANOSECONDS 1000
 
 #endif

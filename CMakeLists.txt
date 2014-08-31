@@ -50,6 +50,8 @@ INCLUDE_DIRECTORIES(${FREETYPE_INCLUDE_DIRS})
 
 SET(spectr_HEADERS
 
+	src/config.h
+	src/constants.h
 	src/types.h
 
 	src/decoding/decode.h

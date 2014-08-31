@@ -20,12 +20,16 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
+#include <math.h>
 
 #ifdef SPECTR_DEBUG
 	#include <stdio.h>
 #endif
 
 #include "config.h"
+#include "constants.h"
 
 int s_init_program();
 int s_set_uniforms();
@@ -141,6 +145,12 @@ int s_init_gl(int (*fptr)(const s_stft_t *, GLuint *),
 	int r;
 	GLFWwindow *window;
 
+	double elapsed;
+	struct timeval t;
+	double sleep;
+	struct timespec sleepspec;
+	struct timespec sleeprem;
+
 	if(!glfwInit())
 		return -EINVAL;
 
@@ -175,6 +185,17 @@ int s_init_gl(int (*fptr)(const s_stft_t *, GLuint *),
 
 	while(!glfwWindowShouldClose(window))
 	{
+		// Get the current time, so we can measure elapsed render time.
+
+		r = gettimeofday(&t, NULL);
+
+		if(r < 0)
+			return errno;
+
+		elapsed = t.tv_sec * ((double) S_SECOND_MICROSECONDS);
+		elapsed += t.tv_usec;
+		elapsed = -elapsed;
+
 		// Initialize the GL viewport.
 
 		glViewport(0, 0, S_WINDOW_W, S_WINDOW_H);
@@ -208,6 +229,37 @@ int s_init_gl(int (*fptr)(const s_stft_t *, GLuint *),
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		// Compute the total elapsed time.
+
+		r = gettimeofday(&t, NULL);
+
+		if(r < 0)
+			return errno;
+
+		elapsed += t.tv_sec * ((double) S_SECOND_MICROSECONDS);
+		elapsed += t.tv_usec;
+
+		// Sleep if our render time took less than 1 / FPS seconds.
+
+		sleep = ((double) S_SECOND_NANOSECONDS) /
+			((double) S_WINDOW_FPS);
+
+		sleep -= ((double) S_MICROSECOND_NANOSECONDS) * elapsed;
+
+		if(sleep > 0.0)
+		{
+			sleepspec.tv_sec = 0.0;
+			sleepspec.tv_nsec = (long) floor(sleep);
+
+			r = nanosleep(&sleepspec, &sleeprem);
+
+			if(r < 0)
+			{
+				glfwTerminate();
+				return errno;
+			}
+		}
 	}
 
 	glfwTerminate();

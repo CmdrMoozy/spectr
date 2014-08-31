@@ -22,6 +22,7 @@
 #include <math.h>
 #include <linux/limits.h>
 #include <fenv.h>
+#include <float.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -217,11 +218,16 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 {
 	int r;
 
+	size_t idx;
 	size_t stfti;
 	size_t dfti;
 
 	double x;
 	double y;
+	double z;
+
+	double minz = DBL_MAX;
+	double maxz = 0.0;
 
 	// Get the dimensions of the view we're rendering.
 
@@ -271,6 +277,14 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 			y = fmax(y, view.ymin + 1);
 			y = fmin(y, view.ymax - 1);
 
+			// Deal with the Z value.
+
+			z = log10(s_magnitude(
+				&(stft->dfts[stfti]->dft[dfti])));
+
+			minz = fmin(minz, z);
+			maxz = fmax(maxz, z);
+
 			// Set the value in our list.
 
 			s_set_spectrogram_vec3(
@@ -280,8 +294,16 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 				y - (view.ymin + 1),
 				x,
 				y,
-				1.0f /*s_magnitude(&(stft->dfts[stfti]->dft[dfti]))*/ );
+				s_magnitude(&(stft->dfts[stfti]->dft[dfti])));
 		}
+	}
+
+	// Scale the Z values to the range [0, 100].
+
+	for(idx = 2; idx < vbo->length; idx += 3)
+	{
+		vbo->data[idx] = s_scale(
+			minz, maxz, 0.0, 100.0, vbo->data[idx]);
 	}
 
 	// Done!

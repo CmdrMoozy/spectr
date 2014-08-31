@@ -36,15 +36,21 @@ int s_init_vbo(s_vbo_t *, size_t);
  */
 static const GLchar *s_vertex_shader_src = {
 	"#version 440\n"
+
 	"in vec3 position;\n"
 	"uniform vec2 resolution;\n"
+
+	"varying float magnitude;\n"
+
 	"void main()\n"
 	"{\n"
+		"\tmagnitude = position[2];\n"
+
 		"\tvec2 pixelrnd = vec2(position[0], position[1]) + 0.5;\n"
 		"\tvec2 zeroToOne = pixelrnd / resolution;\n"
 		"\tvec2 zeroToTwo = zeroToOne * 2.0;\n"
 		"\tvec2 clipSpace = zeroToTwo - 1.0;\n"
-		"\tgl_Position = vec4(clipSpace * vec2(1.0, -1.0), position[2], 1.0);\n"
+		"\tgl_Position = vec4(clipSpace * vec2(1.0, -1.0), 0.0, 1.0);\n"
 	"}\n"
 };
 
@@ -56,11 +62,20 @@ static const GLchar *s_vertex_shader_src = {
  */
 static const GLchar *s_fragment_shader_src = {
 	"#version 440\n"
-	"uniform vec4 color;\n"
+
 	"out vec4 outputColor;\n"
+	"varying float magnitude;\n"
+
 	"void main()\n"
 	"{\n"
-		"outputColor = color;\n"
+		"\tif(abs(magnitude) < 0.01)\n"
+		"\t{\n"
+			"\t\toutputColor = vec4(1.0, 1.0, 1.0, 1.0);\n"
+		"\t}\n"
+		"\telse\n"
+		"\t{\n"
+			"\t\toutputColor = vec4(1.0, 1.0, 0.0, 1.0);\n"
+		"\t}\n"
 	"}\n"
 };
 
@@ -170,31 +185,6 @@ int s_init_gl(int (*fptr)(const s_stft_t *, GLuint *),
 }
 
 /*!
- * This function sets our rendering color. Note that s_init_gl MUST have been
- * called first. Note that each component must be in the range [0, 1].
- *
- * \param r The red component.
- * \param g The green component.
- * \param b The blue component.
- * \param a The alpha component.
- * \return 0 on success, or an error number if something goes wrong.
- */
-int s_gl_color(GLfloat r, GLfloat g, GLfloat b, GLfloat a)
-{
-	GLint colorVec;
-	GLfloat color[4] = {r, g, b, a};
-
-	colorVec = glGetUniformLocation(s_program, "color");
-
-	if(colorVec == -1)
-		return -EINVAL;
-
-	glUniform4fv(colorVec, 1, color);
-
-	return 0;
-}
-
-/*!
  * This function initializes the OpenGL program we will link our shaders into
  * for rendering our spectrogram.
  *
@@ -260,7 +250,6 @@ int s_init_program()
  */
 int s_set_uniforms()
 {
-	int r;
 	GLint resu;
 	GLfloat res[] = { S_WINDOW_W, S_WINDOW_H };
 
@@ -272,13 +261,6 @@ int s_set_uniforms()
 		return -EINVAL;
 
 	glUniform2fv(resu, 1, res);
-
-	// Set our rendering color uniform.
-
-	r = s_gl_color(1.0f, 1.0f, 1.0f, 1.0f);
-
-	if(r < 0)
-		return r;
 
 	// Done!
 

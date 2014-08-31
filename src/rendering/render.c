@@ -280,7 +280,7 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 				y - (view.ymin + 1),
 				x,
 				y,
-				0.0f /*s_magnitude(&(stft->dfts[stfti]->dft[dfti]))*/ );
+				1.0f /*s_magnitude(&(stft->dfts[stfti]->dft[dfti]))*/ );
 		}
 	}
 
@@ -299,13 +299,6 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
  */
 int s_render_legend_frame(GLuint *vao)
 {
-	int r;
-
-	r = s_gl_color(1.0f, 1.0f, 1.0f, 1.0f);
-
-	if(r < 0)
-		return r;
-
 	glBindVertexArray(vao[0]);
 	glDrawArrays(s_vbo_list[0].mode, 0, s_vbo_list[0].length / 3);
 
@@ -397,13 +390,6 @@ done:
  */
 int s_render_stft(GLuint *vao)
 {
-	int r;
-
-	r = s_gl_color(1.0f, 0.0f, 0.0f, 1.0f);
-
-	if(r < 0)
-		return r;
-
 	glBindVertexArray(vao[1]);
 	glDrawArrays(s_vbo_list[1].mode, 0, s_vbo_list[1].length / 3);
 

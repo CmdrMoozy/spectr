@@ -24,10 +24,30 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdio.h>
 
+#include <mad.h>
+
+#include "defines.h"
 #include "util/bitwise.h"
 
+/*!
+ * \brief This structure stores the input and output buffers for MAD decoding.
+ */
+typedef struct s_mad_buffer
+{
+	const uint8_t *in;
+	size_t length;
+	FILE *out;
+} s_mad_buffer_t;
+
 int s_is_mp3_frame_header(const uint8_t *, size_t);
+enum mad_flow s_mad_input(void *, struct mad_stream *);
+int s_mad_scale(mad_fixed_t);
+enum mad_flow s_mad_output(void *,
+	struct mad_header const *, struct mad_pcm *);
+enum mad_flow s_mad_error(void *, struct mad_stream *, struct mad_frame *);
+int s_decode_mp3_data(FILE *, const uint8_t *, size_t);
 
 /*!
  * This function attemps to locate the first valid MP3 frame header in the
@@ -167,6 +187,84 @@ done:
 }
 
 /*!
+ * This function decodes a given MP3 file to raw 16-bit signed little-endian
+ * PCM samples, placing the output in the given buffer.
+ *
+ * NOTE: It is up to the caller to ensure that the given buffer hasn't already
+ * been allocated, and to free it when done.
+ *
+ * \param buf The buffer to write decoded audio data to.
+ * \param bufSize This will receive the size of the resulting audio.
+ * \param f The path to the MP3 file to decode.
+ */
+int s_decode_mp3(char **buf, size_t *bufSize, const char *f)
+{
+	int ret = 0;
+	int r;
+	struct stat s;
+	int fd;
+	void *in;
+	FILE *out;
+
+	// Map the file into memory.
+
+	fd = open(f, O_RDONLY);
+
+	if(fd < 0)
+	{
+		ret = -errno;
+		goto done;
+	}
+
+	r = stat(f, &s);
+
+	if(r < 0)
+	{
+		ret = -errno;
+		goto err_after_open;
+	}
+
+	in = mmap(NULL, s.st_size, PROT_READ, MAP_SHARED, fd, 0);
+
+	if(in == MAP_FAILED)
+	{
+		ret = -errno;
+		goto err_after_open;
+	}
+
+	// Open a memory stream on the given buffer.
+
+	out = open_memstream(buf, bufSize);
+
+	if(out == NULL)
+	{
+		ret = -EIO;
+		goto err_after_mmap;
+	}
+
+	// Decode the mapped file.
+
+	r = s_decode_mp3_data(out, in, s.st_size);
+
+	if(r < 0)
+	{
+		ret = r;
+		goto err_after_memstream;
+	}
+
+	// Clean up and we're done!
+
+err_after_memstream:
+	fclose(out);
+err_after_mmap:
+	munmap(in, s.st_size);
+err_after_open:
+	close(fd);
+done:
+	return ret;
+}
+
+/*!
  * This is a very simple function which tests if, at the given offset in the
  * given buffer, there is a valid MP3 frame header. MP3 frame headers always
  * start with the bytes 0xFF 0xFB -or- 0xFF 0xFA.
@@ -179,4 +277,145 @@ int s_is_mp3_frame_header(const uint8_t *buf, size_t off)
 {
 	return (buf[off] == 0xFF) &&
 		( (buf[off + 1] == 0xFB) || (buf[off + 1] == 0xFA) );
+}
+
+/*!
+ * This function is a callback for libmad which deals with populating MAD's
+ * input buffer.
+ *
+ * \param data The s_mad_buffer_t used to initialize the decoder.
+ * \param stream The stream buffer which is to be decoed.
+ * \return How / whether to proceed with decoding.
+ */
+enum mad_flow s_mad_input(void *data, struct mad_stream *stream)
+{
+	s_mad_buffer_t *buffer = data;
+
+	if(!buffer->length)
+		return MAD_FLOW_STOP;
+
+	mad_stream_buffer(stream, buffer->in, buffer->length);
+
+	buffer->length = 0;
+
+	return MAD_FLOW_CONTINUE;
+}
+
+/*!
+ * This is an extremely basic function which scales MAD's high-resolution
+ * samples down to 16-bit PCM. Its output is not particularly high-quality,
+ * but it's good enough for rendering a spectrogram.
+ *
+ * This implementation is taken from `minimad.c` in the official libmad source
+ * tree.
+ *
+ * \param sample The sample to scale.
+ * \return The sample, scaled down to 16-bits.
+ */
+int s_mad_scale(mad_fixed_t sample)
+{
+	sample += (1L << (MAD_F_FRACBITS - 16));
+
+	if(sample >= MAD_F_ONE)
+		sample = MAD_F_ONE - 1;
+	else if(sample < -MAD_F_ONE)
+		sample = -MAD_F_ONE;
+
+	return sample >> (MAD_F_FRACBITS + 1 - 16);
+}
+
+/*!
+ * This function is a callback for libmad  which handles successfully decoded
+ * output from the decoder. In particular, we write the sample(s) to our output
+ * buffer.
+ *
+ * \param data The s_mad_buffer_t used to initialize the decoder.
+ * \param header The MPEG frame header information.
+ * \param pcm The decoded raw PCM data.
+ * \return How / whether to proceed with decoding.
+ */
+enum mad_flow s_mad_output(void *data, struct mad_header const *UNUSED(header),
+	struct mad_pcm *pcm)
+{
+	uint8_t outbuf[2];
+	s_mad_buffer_t *buffer = data;
+	unsigned int nchannels;
+	unsigned int nsamples;
+	mad_fixed_t const *left_ch;
+	mad_fixed_t const *right_ch;
+	int sample;
+
+	nchannels = pcm->channels;
+	nsamples = pcm->length;
+	left_ch = pcm->samples[0];
+	right_ch = pcm->samples[1];
+
+	while(nsamples--)
+	{
+		sample = s_mad_scale(*left_ch++);
+
+		outbuf[0] = sample & 0xFF;
+		outbuf[1] = (sample >> 8) & 0xFF;
+
+		fwrite(outbuf, sizeof(uint8_t), 2, buffer->out);
+
+		if(nchannels == 2)
+		{
+			sample = s_mad_scale(*right_ch++);
+
+			outbuf[0] = sample & 0xFF;
+			outbuf[1] = (sample >> 8) & 0xFF;
+
+			fwrite(outbuf, sizeof(uint8_t), 2, buffer->out);
+		}
+	}
+
+	fflush(buffer->out);
+
+	return MAD_FLOW_CONTINUE;
+}
+
+/*!
+ * This function is a callback for libmad which handles any decoding errors
+ * encountered by libmad. This particular implementation is very forgiving, and
+ * simply carries on decoding.
+ *
+ * \param data The s_mad_buffer_t used to initialize the decoder.
+ * \param stream The stream being decoded.
+ * \param frame The frame at which the error occured.
+ * \return How / whether to proceed with decoding.
+ */
+enum mad_flow s_mad_error(void *UNUSED(data),
+	struct mad_stream *UNUSED(stream), struct mad_frame *UNUSED(frame))
+{
+	return MAD_FLOW_CONTINUE;
+}
+
+/*!
+ * This is a very basic utility function which initializes an instance of the
+ * MAD decoder, and uses it to decode the data in the given input buffer.
+ *
+ * \param out The FILE * to write decoded data to.
+ * \param in The input file's contents.
+ * \param inl The length of the given input buffer.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_decode_mp3_data(FILE *out, const uint8_t *in, size_t inl)
+{
+	s_mad_buffer_t buffer;
+
+	buffer.in = in;
+	buffer.length = inl;
+	buffer.out = out;
+
+	struct mad_decoder decoder;
+
+	mad_decoder_init(&decoder, &buffer, s_mad_input, NULL, NULL,
+		s_mad_output, s_mad_error, NULL);
+
+	mad_decoder_run(&decoder, MAD_DECODER_MODE_SYNC);
+
+	mad_decoder_finish(&decoder);
+
+	return 0;
 }

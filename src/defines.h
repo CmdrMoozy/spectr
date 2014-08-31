@@ -16,12 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_DECODING_QUIRKS_MP3_H
-#define INCLUDE_SPECTR_DECODING_QUIRKS_MP3_H
+#ifndef INCLUDE_SPECTR_DEFINES_H
+#define INCLUDE_SPECTR_DEFINES_H
 
-#include <stddef.h>
-
-extern int s_get_mp3_frame_header_offset(size_t *, const char *);
-extern int s_decode_mp3(char **, size_t *, const char *);
+	#ifndef UNUSED
+		#if defined(__GNUC__)
+			#define UNUSED(x) UNUSED_ ## x __attribute__((unused))
+		#else
+			#define UNUSED(x)
+		#endif
+	#endif
 
 #endif

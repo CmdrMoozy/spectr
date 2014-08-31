@@ -23,18 +23,8 @@
 #include <errno.h>
 #include <stdint.h>
 
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-
 #include "decoding/ftype.h"
 #include "decoding/quirks/mp3.h"
-
-#define AUDIO_INBUF_SIZE 20480
-#define AUDIO_REFILL_THRESH 4096
-
-int s_decode_with_codec(char **, size_t *, const char *,
-	s_ftype_t, enum AVCodecID);
-int s_decode_with_context(FILE *, size_t, FILE *, AVCodecContext *);
 
 /*!
  * This function decodes the contents of the file denoted the the path f,
@@ -54,215 +44,15 @@ int s_decode(char **buf, size_t *bufSize, const char *f)
 {
 	int r;
 	s_ftype_t type;
-	enum AVCodecID codecID;
 
 	r = s_ftype(&type, f);
 
 	if(r != 0)
 		return r;
 
-	codecID = s_codec_for_ftype(type);
-
-	if(codecID == AV_CODEC_ID_NONE)
-		return -EINVAL;
-
-	return s_decode_with_codec(buf, bufSize, f, type, codecID);
-}
-
-/*!
- * This function attemps to decode a given audio file, using the given codec.
- * See decode() for more information.
- *
- * \param buf The buffer to store the decoded audio data in.
- * \param bufSize Receives the size of the decoded data, in bytes.
- * \param f The path to the file to decode.
- * \param t The file type being decoded.
- * \param c The ffmpeg codec to use to decode the file.
- * \return 0 on success, or an error number if decoding fails.
- */
-int s_decode_with_codec(char **buf, size_t *bufSize, const char *f,
-	s_ftype_t t, enum AVCodecID c)
-{
-	int ret = 0;
-	AVCodec *codec;
-	AVCodecContext *ctxt = NULL;
-	FILE *in;
-	FILE *out;
-	int r;
-	size_t off = 0;
-
-	// Setup the ffmpeg context.
-
-	av_register_all();
-
-	codec = avcodec_find_decoder(c);
-
-	if(!codec)
+	switch(type)
 	{
-		ret = -EINVAL;
-		goto done;
+		case FTYPE_MP3: return s_decode_mp3(buf, bufSize, f);
+		default: return -EINVAL;
 	}
-
-	ctxt = avcodec_alloc_context3(codec);
-
-	if(!ctxt)
-	{
-		ret = -EINVAL;
-		goto done;
-	}
-
-	if(avcodec_open2(ctxt, codec, NULL) < 0)
-	{
-		ret = -EINVAL;
-		goto err_after_context;
-	}
-
-	// Deal with any file forma quirks, so ffmpeg can decode successfully.
-
-	if(t == FTYPE_MP3)
-	{
-		/*
-		 * For MP3 files, the ID3v2 tag needs to be skipped, or else
-		 * ffmpeg will refuse to decode the file. Find the offset of
-		 * the first valid MP3 frame.
-		 */
-
-		r = s_get_mp3_frame_header_offset(&off, f);
-
-		if(r < 0)
-		{
-			ret = r;
-			goto err_after_context;
-		}
-	}
-
-	// Decode the given input file.
-
-	in = fopen(f, "rb");
-
-	if(!in)
-	{
-		ret = -EIO;
-		goto err_after_context;
-	}
-
-	out = open_memstream(buf, bufSize);
-
-	if(!out)
-	{
-		ret = -EIO;
-		goto err_after_open_in;
-	}
-
-	ret = s_decode_with_context(in, off, out, ctxt);
-
-	fclose(out);
-
-err_after_open_in:
-	fclose(in);
-
-err_after_context:
-	avcodec_close(ctxt);
-	av_free(ctxt);
-
-done:
-	return ret;
-}
-
-/*!
- * This function attempts to decode the contents of one file, writing the
- * decoded data t another file, using the given pre-allocated ffmpeg context.
- *
- * \param in The input file to read from. Should be opened in "rb" mode.
- * \param off The byte offset in the input file where the audio data starts.
- * \param out The output file to write to. Should be opened in "wb" mode.
- * \param ctxt The ffmpeg context to use to decode the input file.
- * \return 0 on success, or an error number if decoding fails.
- */
-int s_decode_with_context(FILE *in, size_t off, FILE *out, AVCodecContext *ctxt)
-{
-	int ret = 0;
-	int r;
-	uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
-	AVPacket avpkt;
-	AVFrame *decodedFrame = NULL;
-	int gotFrame = 0;
-	int len;
-	int dataSize;
-
-	r = fseek(in, off, 0);
-
-	if(r < 0)
-	{
-		ret = -errno;
-		goto done;
-	}
-
-	av_init_packet(&avpkt);
-
-	avpkt.data = inbuf;
-	avpkt.size = fread(inbuf, sizeof(uint8_t), AUDIO_INBUF_SIZE, in);
-
-	while(avpkt.size > 0)
-	{
-		gotFrame = 0;
-
-		if(!decodedFrame)
-		{
-			if(!(decodedFrame = avcodec_alloc_frame()))
-			{
-				ret = -EINVAL;
-				goto done;
-			}
-		}
-
-		len = avcodec_decode_audio4(ctxt, decodedFrame,
-			&gotFrame, &avpkt);
-
-		if(len < 0)
-		{
-			ret = -EIO;
-			goto done;
-		}
-
-		if(gotFrame)
-		{
-			dataSize = av_samples_get_buffer_size(NULL,
-				ctxt->channels, decodedFrame->nb_samples,
-				ctxt->sample_fmt, 1);
-
-			if(dataSize < 0)
-			{
-				ret = -EINVAL;
-				goto done;
-			}
-
-			fwrite(decodedFrame->data[0], sizeof(uint8_t),
-				dataSize, out);
-		}
-
-		avpkt.size -= len;
-		avpkt.data += len;
-		avpkt.dts = avpkt.pts = AV_NOPTS_VALUE;
-
-		if(avpkt.size < AUDIO_REFILL_THRESH)
-		{
-			memmove(inbuf, avpkt.data, avpkt.size);
-			avpkt.data = inbuf;
-
-			len = fread(avpkt.data + avpkt.size, sizeof(uint8_t),
-				AUDIO_INBUF_SIZE - avpkt.size, in);
-
-			if(len > 0)
-				avpkt.size += len;
-		}
-	}
-
-done:
-	if(decodedFrame)
-		avcodec_free_frame(&decodedFrame);
-
-	fflush(out);
-
-	return ret;
 }

@@ -18,6 +18,8 @@
 
 #include "math.h"
 
+#include <math.h>
+
 /*!
  * This function returns the mono version of the given stereo sample. This is
  * computed by averaging the two channels of the given sample, without
@@ -28,8 +30,11 @@
  */
 int32_t s_mono_sample(s_stereo_sample_t s)
 {
-	int64_t mono = ( ((int64_t) s.l) + ((int64_t) s.r) ) >> 1;
-	return (int32_t) mono;
+	double l = (double) s.l;
+	double r = (double) s.r;
+	double m = (l / 2.0) + (r / 2.0);
+
+	return (int32_t) floor(m);
 }
 
 /*!

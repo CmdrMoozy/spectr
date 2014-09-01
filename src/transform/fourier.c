@@ -486,19 +486,19 @@ int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 
 	// Compute the DFT of the even elements.
 
-	r = s_fft_r(dft, dfto, raw, es, eo, bign >> 1);
+	r = s_fft_r(dft, dfto, raw, es, eo, bign / 2);
 
 	if(r < 0)
 		return r;
 
 	// Compute the DFT of the odd elements.
 
-	r = s_fft_r(dft, dfto, raw, os, oo, bign >> 1);
+	r = s_fft_r(dft, dfto, raw, os, oo, bign / 2);
 
 	if(r < 0)
 		return r;
 
-	half = bign >> 1;
+	half = bign / 2;
 
 	/*
 	 * We need to create a copy of the DFT values as-is, since we need to

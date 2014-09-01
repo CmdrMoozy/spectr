@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 			goto err_after_raw_alloc;
 		}
 
-		r = s_write_raw_audio(out, audio);
+		r = s_write_raw_mono_audio(out, audio);
 
 		fclose(out);
 
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 	printf("DEBUG: Window size: %" PRIu64 "\n", (uint64_t) window);
 #endif
 
-	r = s_stft(&stft, audio, S_WINDOW_SIZE);
+	r = s_stft(&stft, audio, window);
 
 	if(r < 0)
 	{

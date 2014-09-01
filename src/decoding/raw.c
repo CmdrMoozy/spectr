@@ -23,6 +23,7 @@
 
 #include "decoding/decode.h"
 #include "decoding/stat.h"
+#include "util/math.h"
 
 int s_process_next_sample(s_stereo_sample_t *, size_t *,
 	const char *, size_t *, size_t, uint32_t);
@@ -196,7 +197,7 @@ int s_decode_raw_audio(s_raw_audio_t *raw, const char *f)
 		raw->samples = NULL;
 	}
 
-	raw->samples_length = raw->stat.bit_depth >> 2;
+	raw->samples_length = raw->stat.bit_depth / 4;
 
 	if( (bytes % raw->samples_length) != 0 )
 	{
@@ -256,12 +257,12 @@ int s_write_raw_audio(FILE *out, const s_raw_audio_t *raw)
 {
 	size_t i;
 	uint32_t byte;
-	uint8_t buf[4];
+	uint8_t buf[16];
 	size_t bufidx;
 	uint32_t shift;
 	size_t written;
 
-	uint32_t byted = raw->stat.bit_depth >> 3;
+	uint32_t byted = raw->stat.bit_depth / 8;
 
 	for(i = 0; i < raw->samples_length; ++i)
 	{
@@ -302,6 +303,53 @@ int s_write_raw_audio(FILE *out, const s_raw_audio_t *raw)
 }
 
 /*!
+ * This function writes the contents of the given s_raw_audio_t structure to
+ * the given file, in raw PCM format. This function is slightly different
+ * from s_write_raw_mono_audio, though, since it converts each stereo sample
+ * to mono before writing.
+ *
+ * \param out The file to write the data to.
+ * \param raw The raw audio object whose data will be written.
+ * \return 0 on success, or an error number if something goes wrong.
+ */
+int s_write_raw_mono_audio(FILE *out, const s_raw_audio_t *raw)
+{
+	size_t i;
+	uint32_t byte;
+	uint8_t buf[16];
+	size_t bufidx;
+	uint32_t shift;
+	size_t written;
+	int32_t mono;
+
+	uint32_t byted = raw->stat.bit_depth / 8;
+
+	for(i = 0; i < raw->samples_length; ++i)
+	{
+		// Write the mono sample.
+
+		mono = s_mono_sample(raw->samples[i]);
+
+		bufidx = 0;
+
+		for(byte = byted; byte > 0; --byte)
+		{
+			shift = (byte - 1) << 3;
+			buf[bufidx++] = (mono >> shift) & 0xFF;
+		}
+
+		written = fwrite(buf, sizeof(uint8_t), byted, out);
+
+		if(written != byted)
+		return -EINVAL;
+	}
+
+	fflush(out);
+
+	return 0;
+}
+
+/*!
  * This function reads and interprets the next sample from the given byte
  * buffer. We return true if there are more samples to be read, or false if
  * we've reached the end of the buffer.
@@ -334,28 +382,28 @@ int s_process_next_sample(s_stereo_sample_t *s, size_t *soff,
 
 	// Make sure the bytes for these samples aren't out of bounds.
 
-	if( (*doff + (bits >> 2)) >= bytes )
+	if( (*doff + (bits / 4)) >= bytes )
 		return 0;
 
 	// Read the bytes for the left channel.
 
-	for(o = 0; o < (bits >> 3); ++o)
+	for(o = 0; o < (bits / 8); ++o)
 	{
 		s[*soff].l <<= 8;
 		s[*soff].l |= (uint32_t) d[*doff + o];
 	}
 
-	*doff += (bits >> 3);
+	*doff += (bits / 8);
 
 	// Read the bytes for the right channel.
 
-	for(o = 0; o < (bits >> 3); ++o)
+	for(o = 0; o < (bits / 8); ++o)
 	{
 		s[*soff].r <<= 8;
 		s[*soff].r |= (uint32_t) d[*doff + o];
 	}
 
-	*doff += (bits >> 3);
+	*doff += (bits / 8);
 
 	// Increase the sample index, and then we're done.
 

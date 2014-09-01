@@ -20,14 +20,6 @@
 #define INCLUDE_SPECTR_CONFIG_H
 
 /*
- * This is the window size which will be used for our application's STFT
- * computations. Given a typical input signal of 44,100 Hz, this is the largest
- * number which is a power of two which provides at least one DFT result per
- * each pixel in a 800-pixel-wide window.
- */
-#define S_WINDOW_SIZE 16384
-
-/*
  * This defines the number of frames we're willing to render each second.
  */
 #define S_WINDOW_FPS 20

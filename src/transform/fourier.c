@@ -555,7 +555,10 @@ int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 	 * computed the correct DFT for this level.
 	 */
 
-	s_complex_t dftprime[bign];
+	s_complex_t *dftprime = malloc(sizeof(s_complex_t) * bign);
+
+	if(dftprime == NULL)
+		return -ENOMEM;
 
 	for(idx = 0; idx < bign; ++idx)
 		dftprime[idx] = dft->dft[s * idx + o - dfto];
@@ -625,6 +628,8 @@ int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 	}
 
 	// Done!
+
+	free(dftprime);
 
 	return 0;
 }

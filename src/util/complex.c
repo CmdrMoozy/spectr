@@ -20,6 +20,10 @@
 
 #include <math.h>
 
+#ifdef SPECTR_DEBUG
+	#include <assert.h>
+#endif
+
 /*!
  * This function adds the two given complex values together, placing the result
  * in the given location.
@@ -113,7 +117,16 @@ void s_cexp(s_complex_t *r, double x)
  */
 double s_magnitude(const s_complex_t *c)
 {
-	return sqrt(c->r * c->r + c->i * c->i);
+	double r = sqrt(c->r * c->r + c->i * c->i);
+
+#ifdef SPECTR_DEBUG
+	// Assert that we didn't just overflow or do anything illegal.
+
+	assert(!isnan(r));
+	assert(!isinf(r));
+#endif
+
+	return r;
 }
 
 /*!

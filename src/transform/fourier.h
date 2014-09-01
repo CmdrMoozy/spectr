@@ -23,21 +23,25 @@
 
 #include "types.h"
 
+extern double s_hann_function(int32_t n, size_t N);
+
 extern int s_init_dft(s_dft_t **);
 extern void s_free_dft(s_dft_t **);
 
 extern int s_init_dft_result(s_dft_t *, size_t);
 extern int s_copy_dft(s_dft_t **, const s_dft_t *);
 
-extern int s_fft_part(s_dft_t **, const s_raw_audio_t *, size_t, size_t);
+extern int s_fft_part(s_dft_t **, const s_raw_audio_t *, size_t, size_t,
+	double (*)(int32_t, size_t));
 extern int s_fft(s_dft_t **, const s_raw_audio_t *);
 
 extern int s_init_stft(s_stft_t **);
 extern void s_free_stft(s_stft_t **);
 
-extern int s_init_stft_result(s_stft_t *, const s_raw_audio_t *, size_t);
+extern int s_init_stft_result(s_stft_t *, const s_raw_audio_t *,
+	size_t, size_t);
 extern void s_free_stft_result(s_stft_t *);
 
-extern int s_stft(s_stft_t **, const s_raw_audio_t *, size_t);
+extern int s_stft(s_stft_t **, const s_raw_audio_t *, size_t, size_t);
 
 #endif

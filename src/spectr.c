@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 	printf("DEBUG: Window size: %" PRIu64 "\n", (uint64_t) window);
 #endif
 
-	r = s_stft(&stft, audio, window);
+	r = s_stft(&stft, audio, window, (size_t) (0.1 * ((double) window)));
 
 	if(r < 0)
 	{

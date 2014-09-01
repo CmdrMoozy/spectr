@@ -23,12 +23,43 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef SPECTR_DEBUG
+	#include <assert.h>
+#endif
+
 #include "decoding/raw.h"
 #include "util/math.h"
 #include "util/bitwise.h"
 #include "util/complex.h"
 
-int s_fft_r(s_dft_t *, size_t, const s_raw_audio_t *, size_t, size_t, size_t);
+int s_fft_r(s_dft_t *, size_t, const s_raw_audio_t *, size_t, size_t, size_t,
+	double (*)(int32_t, size_t), size_t, size_t);
+
+/*!
+ * This function implements the Hann windowing function. For more information,
+ * see:
+ *
+ *     http://en.wikipedia.org/wiki/Hann_function
+ *     http://en.wikipedia.org/wiki/Window_function
+ *
+ * \param n The index of the sample to window.
+ * \param N the total number of samples in this window's range.
+ * \return The Hann window coefficient for the given sample.
+ */
+double s_hann_function(int32_t n, size_t N)
+{
+	double nd = (double) n;
+	double Nd = (double) N;
+	double ret;
+
+	ret = 2.0 * M_PI * nd;
+	ret /= (Nd - 1.0);
+	ret = cos(ret);
+	ret = 1.0 - ret;
+	ret = 0.5 * ret;
+
+	return ret;
+}
 
 /*!
  * This function initializes (allocates) a s_dft_t variable. If the pointer is
@@ -176,9 +207,11 @@ int s_copy_dft(s_dft_t **dst, const s_dft_t *src)
  * \param raw The raw audio data to process.
  * \param o The offset to start processing the raw audio data from.
  * \param l The length of the raw audio data to process.
+ * \param wfn The window function to use, or NULL.
  * \return 0 on success, or an error number otherwise.
  */
-int s_fft_part(s_dft_t **dft, const s_raw_audio_t *raw, size_t o, size_t l)
+int s_fft_part(s_dft_t **dft, const s_raw_audio_t *raw, size_t o, size_t l,
+	double (*wfn)(int32_t, size_t))
 {
 	int r;
 
@@ -200,7 +233,7 @@ int s_fft_part(s_dft_t **dft, const s_raw_audio_t *raw, size_t o, size_t l)
 
 	// Compute the DFT using our FFT algorithm.
 
-	r = s_fft_r(*dft, o, raw, 1, o, l);
+	r = s_fft_r(*dft, o, raw, 1, o, l, wfn, o, l);
 
 	if(r < 0)
 	{
@@ -222,7 +255,7 @@ int s_fft_part(s_dft_t **dft, const s_raw_audio_t *raw, size_t o, size_t l)
  */
 int s_fft(s_dft_t **dft, const s_raw_audio_t *raw)
 {
-	return s_fft_part(dft, raw, 0, raw->samples_length);
+	return s_fft_part(dft, raw, 0, raw->samples_length, NULL);
 }
 
 /*!
@@ -281,9 +314,11 @@ void s_free_stft(s_stft_t **stft)
  * \param stft The STFT whose contents will be initialized.
  * \param raw The raw audio structure to be processed.
  * \param w The size of the STFT window. Must be a power of two.
+ * \param o The amount of overlap of each window.
  * \return 0 on success, or an error number otherwise.
  */
-int s_init_stft_result(s_stft_t *stft, const s_raw_audio_t *raw, size_t w)
+int s_init_stft_result(s_stft_t *stft, const s_raw_audio_t *raw,
+	size_t w, size_t o)
 {
 	int r;
 	size_t i;
@@ -300,7 +335,7 @@ int s_init_stft_result(s_stft_t *stft, const s_raw_audio_t *raw, size_t w)
 	stft->raw_stat = raw->stat;
 
 	stft->window = w;
-	stft->length = raw->samples_length / w;
+	stft->length = raw->samples_length / (w - o);
 
 	stft->dfts = malloc(sizeof(s_dft_t *) * stft->length);
 
@@ -376,9 +411,10 @@ void s_free_stft_result(s_stft_t *stft)
  * \param stft This will receive the result of our computations.
  * \param raw The raw audio signal to process.
  * \param w The window function size. Must be a power of two.
+ * \param o The overlap of each window.
  * \return 0 on success, or an error number otherwise.
  */
-int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
+int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w, size_t o)
 {
 	int r;
 	size_t i;
@@ -392,7 +428,7 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 	if(r < 0)
 		return r;
 
-	r = s_init_stft_result(*stft, raw, w);
+	r = s_init_stft_result(*stft, raw, w, o);
 
 	if(r < 0)
 	{
@@ -406,7 +442,8 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
 	{
 		// Compute the DFT of this raw audio window.
 
-		r = s_fft_part(&((*stft)->dfts[i]), raw, i * w, w);
+		r = s_fft_part(&((*stft)->dfts[i]), raw, i * (w - o), w,
+			s_hann_function);
 
 		if(r < 0)
 		{
@@ -435,13 +472,19 @@ int s_stft(s_stft_t **stft, const s_raw_audio_t *raw, size_t w)
  * \param raw The raw data to transform.
  * \param s The stride to iterate over the list with.
  * \param o The offset to iterate over the list with.
- * \param N the length of the list being iterated over.
+ * \param bign the length of the list being iterated over.
+ * \param wfn The window function to use, or NULL.
+ * \param orgO The offset given to the first call in this recursive chain.
+ * \param orgN The N length given to the first call in this recursive chain.
  * \return 0 on success, or an error number otherwise.
  */
 int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
-	size_t s, size_t o, size_t bign)
+	size_t s, size_t o, size_t bign, double (*wfn)(int32_t, size_t),
+	size_t orgO, size_t orgN)
 {
 	int r;
+
+	double window;
 
 	size_t es;
 	size_t eo;
@@ -473,6 +516,12 @@ int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 		dft->dft[o - dfto].r = (double) s_mono_sample(raw->samples[o]);
 		dft->dft[o - dfto].i = 0.0;
 
+		if(wfn != NULL)
+		{
+			window = wfn(o - orgO, orgN);
+			dft->dft[o - dfto].r *= window;
+		}
+
 		return 0;
 	}
 
@@ -486,14 +535,14 @@ int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 
 	// Compute the DFT of the even elements.
 
-	r = s_fft_r(dft, dfto, raw, es, eo, bign / 2);
+	r = s_fft_r(dft, dfto, raw, es, eo, bign / 2, wfn, orgO, orgN);
 
 	if(r < 0)
 		return r;
 
 	// Compute the DFT of the odd elements.
 
-	r = s_fft_r(dft, dfto, raw, os, oo, bign / 2);
+	r = s_fft_r(dft, dfto, raw, os, oo, bign / 2, wfn, orgO, orgN);
 
 	if(r < 0)
 		return r;
@@ -557,6 +606,22 @@ int s_fft_r(s_dft_t *dft, size_t dfto, const s_raw_audio_t *raw,
 		dstu = &(dft->dft[s * (idx + half) + o - dfto]);
 		s_cmul(dstu, &bigwu, odd);
 		s_cadd(dstu, even, dstu);
+
+#ifdef SPECTR_DEBUG
+		// Make sure we didn't overflow or do anything wrong.
+
+		assert(!isnan(even->r));
+		assert(!isinf(even->r));
+
+		assert(!isnan(even->i));
+		assert(!isinf(even->i));
+
+		assert(!isnan(odd->r));
+		assert(!isinf(odd->r));
+
+		assert(!isnan(odd->i));
+		assert(!isinf(odd->i));
+#endif
 	}
 
 	// Done!

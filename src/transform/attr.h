@@ -21,6 +21,6 @@
 
 #include <stddef.h>
 
-extern int s_get_window_size(size_t *, size_t, size_t);
+extern int s_get_window_size(size_t *, size_t, size_t, size_t);
 
 #endif

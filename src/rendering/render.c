@@ -36,8 +36,8 @@
 #include "util/math.h"
 
 int s_render_loop(const s_stft_t *, GLuint *);
-void s_set_spectrogram_vec3(GLfloat *, size_t, size_t,
-	size_t, GLfloat, GLfloat, GLfloat);
+void s_set_spectrogram_vec3(GLfloat *, size_t, uint32_t *,
+	size_t, size_t, GLfloat, GLfloat, GLfloat);
 int s_alloc_stft_vbo(s_vbo_t *, const s_stft_t *);
 int s_render_legend_frame(GLuint *);
 int s_render_legend_labels(const s_stft_t *);
@@ -70,9 +70,6 @@ int s_render(const s_stft_t *stft)
 	int ret = 0;
 	int r;
 
-	s_spectrogram_viewport view =
-		s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
-
 	// Allocate the list of VBO objects we'll use.
 
 	s_vbo_list_length = 2;
@@ -87,17 +84,17 @@ int s_render(const s_stft_t *stft)
 	// Set the values of the legend frame vertices.
 
 	s_vbo_list[0].data = (GLfloat[24]) {
-		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymin, -1.0f,
-		view.xmax, view.ymin, -1.0f,
+		S_VIEW_X_MIN - S_SPEC_LGND_TICK_SIZE, S_VIEW_Y_MIN, -1.0f,
+		S_VIEW_X_MAX, S_VIEW_Y_MIN, -1.0f,
 
-		view.xmax, view.ymin, -1.0f,
-		view.xmax, view.ymax + S_SPEC_LGND_TICK_SIZE, -1.0f,
+		S_VIEW_X_MAX, S_VIEW_Y_MIN, -1.0f,
+		S_VIEW_X_MAX, S_VIEW_Y_MAX + S_SPEC_LGND_TICK_SIZE, -1.0f,
 
-		view.xmax, view.ymax, -1.0f,
-		view.xmin - S_SPEC_LGND_TICK_SIZE, view.ymax, -1.0f,
+		S_VIEW_X_MAX, S_VIEW_Y_MAX, -1.0f,
+		S_VIEW_X_MIN - S_SPEC_LGND_TICK_SIZE, S_VIEW_Y_MAX, -1.0f,
 
-		view.xmin, view.ymax + S_SPEC_LGND_TICK_SIZE, -1.0f,
-		view.xmin, view.ymin, -1.0f
+		S_VIEW_X_MIN, S_VIEW_Y_MAX + S_SPEC_LGND_TICK_SIZE, -1.0f,
+		S_VIEW_X_MIN, S_VIEW_Y_MIN, -1.0f
 	};
 
 	s_vbo_list[0].length = 24;
@@ -125,31 +122,6 @@ err_after_vbo_alloc:
 	free(s_vbo_list);
 done:
 	return ret;
-}
-
-/*!
- * This function computes the spectrogram viewport we're using from the given
- * framebuffer width and height values (from glfwGetFramebufferSize()).
- *
- * The returned structure should be used to render our spectrogram, to avoid
- * scattering various "magic numbers" throughout the code.
- *
- * \return The spectrogram viewport for the given framebuffer.
- */
-s_spectrogram_viewport s_get_spectrogram_viewport()
-{
-	s_spectrogram_viewport v;
-
-	v.xmin = 75;
-	v.ymin = 5;
-
-	v.xmax = S_WINDOW_W - 5;
-	v.ymax = S_WINDOW_H - 30;
-
-	v.w = v.xmax - v.xmin - 1;
-	v.h = v.ymax - v.ymin - 1;
-
-	return v;
 }
 
 /*!
@@ -194,22 +166,29 @@ int s_render_loop(const s_stft_t *stft, GLuint *vao)
  *
  * \param arr The list of spectrogram points.
  * \param arrw The width of a "row" in the array; the maximum y value, incl.
+ * \param avg The number of values being averaged in each array cell.
  * \param ix The X index of the pixel being set.
  * \param iy The Y index of the pixel being set.
  * \param x The X-component of the 3-vector.
  * \param y The Y-component of the 3-vector.
  * \param z The Z-component of the 3-vector.
  */
-void s_set_spectrogram_vec3(GLfloat *arr, size_t arrw, size_t ix, size_t iy,
-	GLfloat x, GLfloat y, GLfloat z)
+void s_set_spectrogram_vec3(GLfloat *arr, size_t arrw,
+	uint32_t *avg, size_t ix, size_t iy, GLfloat x, GLfloat y, GLfloat z)
 {
-	size_t idx = arrw * iy + ix;
-	idx = idx * 3;
+	size_t aidx;
+	size_t idx;
+
+	aidx = arrw * iy + ix;
+	idx = aidx * 3;
 
 	arr[idx] = x;
 	arr[idx + 1] = y;
 
-	arr[idx + 2] = z;
+	arr[idx + 2] = (arr[idx + 2] * (avg[aidx] / (avg[aidx] + 1.0))) +
+		(z / (avg[aidx] + 1.0));;
+
+	++avg[aidx];
 }
 
 /*!
@@ -235,11 +214,6 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	double minz = DBL_MAX;
 	double maxz = 0.0;
 
-	// Get the dimensions of the view we're rendering.
-
-	s_spectrogram_viewport view =
-		s_get_spectrogram_viewport(S_WINDOW_W, S_WINDOW_H);
-
 	// Set our rounding mode.
 
 	r = fesetround(FE_TONEAREST);
@@ -252,51 +226,71 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	 * 3-vectors of (time, frequency, magnitude).
 	 */
 
-	vbo->data = (GLfloat *) calloc(view.w * view.h * 3, sizeof(GLfloat));
+	vbo->data = (GLfloat *)
+		calloc(S_VIEW_W * S_VIEW_W * 3, sizeof(GLfloat));
 
 	if(vbo->data == NULL)
 		return -ENOMEM;
 
-	vbo->length = view.w * view.h * 3;
+	vbo->length = S_VIEW_W * S_VIEW_H * 3;
 	vbo->usage = GL_STATIC_DRAW;
 	vbo->mode = GL_POINTS;
+
+	/*
+	 * Allocate an array to keep track of average counts, so we can compute
+	 * the average of DFT results that all fall in the same pixel.
+	 */
+
+	uint32_t *averageCount = (uint32_t *)
+		calloc(S_VIEW_W * S_VIEW_H, sizeof(uint32_t));
+
+	if(averageCount == NULL)
+	{
+		free(vbo->data);
+		return -ENOMEM;
+	}
 
 	// Compute the value of each point we'll render.
 
 	for(stfti = 0; stfti < stft->length; ++stfti)
 	{
-		for(dfti = 0; dfti < stft->dfts[stfti]->length / 2; ++dfti)
+		for(dfti = 1; dfti < stft->dfts[stfti]->length / 2; ++dfti)
 		{
 			// Get the X and Y values in the right range.
 
-			x = s_scale(0, stft->length, view.xmin + 1,
-				view.xmax - 1, stfti);
-			y = s_scale(0, stft->dfts[stfti]->length / 2 - 1,
-				view.ymin + 1, view.ymax - 1, dfti);
+			x = s_scale(0, stft->length, S_VIEW_X_MIN + 1,
+				S_VIEW_X_MAX - 1, stfti);
+
+			y = (double) (dfti + S_VIEW_Y_MIN);
+
+			// Round to the nearest integer pixel.
 
 			x = rint(x);
-			y = rint(y);
 
-			x = fmax(x, view.xmin + 1);
-			x = fmin(x, view.xmax - 1);
+			// Clip the coordinates to our view's range.
 
-			y = fmax(y, view.ymin + 1);
-			y = fmin(y, view.ymax - 1);
+			x = fmax(x, S_VIEW_X_MIN + 1);
+			x = fmin(x, S_VIEW_X_MAX - 1);
 
-			// Deal with the Z value.
+			// Compute the Z value.
 
 			z = s_magnitude(&(stft->dfts[stfti]->dft[dfti]));
-			z = log10(pow(z, 2.0));
+			z = log10(z);
+
+			if(isinf(z) || isnan(z))
+				continue;
 
 			// Set the value in our list.
 
 			s_set_spectrogram_vec3(
 				vbo->data,
-				view.w,
-				x - (view.xmin + 1),
-				y - (view.ymin + 1),
+				S_VIEW_W,
+				averageCount,
+				x - (S_VIEW_X_MIN + 1),
+				y - ((double) S_VIEW_Y_MIN) - 1.0,
 				x,
-				y,
+				((double) S_VIEW_Y_MAX) - y +
+					((double) S_VIEW_Y_MIN),
 				z);
 		}
 	}
@@ -315,12 +309,7 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	// Shift the values down so they are in the range [0, maxz].
 
 	for(idx = 2; idx < vbo->length; idx += 3)
-	{
-		if(fabs(vbo->data[idx]) < 0.0001)
-			continue;
-
-		vbo->data[idx] = vbo->data[idx] - minz;
-	}
+		vbo->data[idx] = fmax(vbo->data[idx] - minz, 0.0f);
 
 	maxz -= minz;
 	minz = 0.0;
@@ -330,6 +319,8 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	s_max_magnitude = maxz;
 
 	// Done!
+
+	free(averageCount);
 
 	return 0;
 }
@@ -361,8 +352,6 @@ int s_render_legend_labels(const s_stft_t *stft)
 
 	int ret = 0;
 
-	s_spectrogram_viewport view;
-
 	// Initialize the FreeType library, and get the font we'll use.
 
 	if(FT_Init_FreeType(&ft))
@@ -390,10 +379,6 @@ int s_render_legend_labels(const s_stft_t *stft)
 		ret = -ELIBACC;
 		goto err_after_font_alloc;
 	}
-
-	// Get the viewport parameters we'll use to render.
-
-	view = s_get_spectrogram_viewport();
 
 	// Get the frequency and duration labels.
 

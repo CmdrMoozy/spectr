@@ -20,6 +20,7 @@
 
 #include <errno.h>
 
+#include "defines.h"
 #include "util/bitwise.h"
 
 /*!
@@ -27,25 +28,15 @@
  * that our spectrogram will be w pixels wide, and assuming that our input
  * audio file contains s samples.
  *
- * This window size will be the largest power of two which means that there
- * will be at least one DFT result for each "column" in the spectrogram.
- *
- * Note that this does imply that s must be >= w, since the smallest window
- * size we can choose is 1, and a window size of 1 doesn't fulfill the above
- * guarantee for any s < w.
- *
  * \param o This will receive the computed window size.
  * \param w The width of the spectrogram, in pixels.
+ * \param h The height of the spectrogram, in pixels.
  * \param s The number of samples in the input file.
  * \return 0 on success, or an error number if something goes wrong.
  */
-int s_get_window_size(size_t *o, size_t w, size_t s)
+int s_get_window_size(size_t *o, size_t UNUSED(w),
+	size_t UNUSED(h), size_t UNUSED(s))
 {
-	if(s < w)
-		return -EINVAL;
-
-	*o = s / w;
-	*o = s_flp2(*o);
-
+	*o = 512;
 	return 0;
 }

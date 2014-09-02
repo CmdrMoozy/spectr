@@ -101,23 +101,6 @@ typedef struct s_stft
 } s_stft_t;
 
 /*!
- * \brief This structure defines the bounds of our spectrogram viewport.
- *
- * The points (xmin, ymin) and (xmax, ymax) are the upper-left and lower-right
- * corners of our spectrogram viewport, respectively.
- */
-typedef struct s_spectrogram_viewport
-{
-	int xmin;
-	int ymin;
-	int xmax;
-	int ymax;
-
-	int w;
-	int h;
-} s_spectrogram_viewport;
-
-/*!
  * \brief This structure stores the state of an OpenGL VBO.
  */
 typedef struct s_vbo_t

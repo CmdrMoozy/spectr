@@ -27,8 +27,14 @@
 /*
  * This is the size of the window we'll plot our result in.
  */
-#define S_WINDOW_W 800
-#define S_WINDOW_H 250
+#define S_VIEW_H 255
+#define S_VIEW_W 719
+#define S_VIEW_X_MIN 75
+#define S_VIEW_Y_MIN 5
+#define S_VIEW_X_MAX 795	// X_MIN + W + 1 (frame)
+#define S_VIEW_Y_MAX 261	// Y_MIN + H + 1 (frame)
+#define S_WINDOW_W 800		// X_MAX + 5 (padding)
+#define S_WINDOW_H 291		// Y_MAX + 30 (padding)
 
 /*
  * These values define some properties of our spectrogram legend.

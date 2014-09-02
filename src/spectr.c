@@ -49,7 +49,6 @@ int main(int argc, char *argv[])
 	int ret = EXIT_SUCCESS;
 	int r;
 	s_raw_audio_t *audio = NULL;
-	s_spectrogram_viewport viewport;
 	size_t window;
 	s_stft_t *stft = NULL;
 
@@ -137,9 +136,8 @@ int main(int argc, char *argv[])
 	elapsed = -elapsed;
 #endif
 
-	viewport = s_get_spectrogram_viewport();
-
-	r = s_get_window_size(&window, viewport.w, audio->samples_length);
+	r = s_get_window_size(&window, S_VIEW_W,
+		S_VIEW_H, audio->samples_length);
 
 	if(r < 0)
 	{
@@ -152,7 +150,7 @@ int main(int argc, char *argv[])
 	printf("DEBUG: Window size: %" PRIu64 "\n", (uint64_t) window);
 #endif
 
-	r = s_stft(&stft, audio, window, (size_t) (0.1 * ((double) window)));
+	r = s_stft(&stft, audio, window, 0);
 
 	if(r < 0)
 	{
@@ -240,7 +238,8 @@ void s_test()
 	test->stat.sample_rate = 44100;
 
 	test->samples_length = 8;
-	test->samples = malloc(sizeof(s_stereo_sample_t) * 16);
+	test->samples = malloc(sizeof(s_stereo_sample_t) *
+		test->samples_length);
 	assert(test->samples != NULL);
 
 	for(i = 0; i < 8; ++i)

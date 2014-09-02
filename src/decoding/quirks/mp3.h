@@ -20,8 +20,9 @@
 #define INCLUDE_SPECTR_DECODING_QUIRKS_MP3_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 extern int s_get_mp3_frame_header_offset(size_t *, const char *);
-extern int s_decode_mp3(char **, size_t *, const char *);
+extern int s_decode_mp3(uint8_t **, size_t *, const char *);
 
 #endif

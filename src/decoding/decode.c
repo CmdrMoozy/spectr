@@ -18,10 +18,7 @@
 
 #include "decode.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <stdint.h>
 
 #include "decoding/ftype.h"
 #include "decoding/quirks/mp3.h"
@@ -40,7 +37,7 @@
  * \param f The path to the file to decode.
  * \return 0 on success, or an error number if decoding fails.
  */
-int s_decode(char **buf, size_t *bufSize, const char *f)
+int s_decode(uint8_t **buf, size_t *bufSize, const char *f)
 {
 	int r;
 	s_ftype_t type;

@@ -22,6 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-extern int s_decode(char **, size_t *, const char *);
+extern int s_decode(uint8_t **, size_t *, const char *);
 
 #endif

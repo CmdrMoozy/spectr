@@ -197,7 +197,7 @@ done:
  * \param bufSize This will receive the size of the resulting audio.
  * \param f The path to the MP3 file to decode.
  */
-int s_decode_mp3(char **buf, size_t *bufSize, const char *f)
+int s_decode_mp3(uint8_t **buf, size_t *bufSize, const char *f)
 {
 	int ret = 0;
 	int r;
@@ -234,7 +234,7 @@ int s_decode_mp3(char **buf, size_t *bufSize, const char *f)
 
 	// Open a memory stream on the given buffer.
 
-	out = open_memstream(buf, bufSize);
+	out = open_memstream((char **) buf, bufSize);
 
 	if(out == NULL)
 	{

@@ -25,9 +25,6 @@
 #include "decoding/stat.h"
 #include "util/math.h"
 
-int s_process_next_sample(s_stereo_sample_t *, size_t *,
-	const char *, size_t *, size_t, uint32_t);
-
 /*!
  * This function initializes (allocates) a s_raw_audio_t variable. If the
  * pointer is non-NULL, we will not allocate a new value on top of it.
@@ -157,10 +154,11 @@ int s_decode_raw_audio(s_raw_audio_t *raw, const char *f)
 {
 	int ret = 0;
 	int r;
-	char *audio;
+	uint8_t *audio;
 	size_t bytes;
-	size_t soff;
-	size_t doff;
+	size_t idx;
+	size_t bidx;
+	uint32_t shift;
 
 	// Try decoding the input file.
 
@@ -216,27 +214,25 @@ int s_decode_raw_audio(s_raw_audio_t *raw, const char *f)
 
 	// Iterate through the decoded raw data, reading in each sample.
 
-	soff = 0;
-	doff = 0;
-
-	while(s_process_next_sample(raw->samples, &soff,
-		audio, &doff, bytes, raw->stat.bit_depth))
+	for(idx = 0; idx < raw->samples_length; ++idx)
 	{
-		/*
-		 * We continue processing samples until we reach the end of the
-		 * raw data buffer.
-		 */
-	}
+		bidx = idx * (raw->stat.bit_depth / 8) * 2;
 
-	if(soff + 1 != raw->samples_length)
-	{
-		ret = -EINVAL;
+		raw->samples[idx].l = 0;
 
-		free(raw->samples);
-		raw->samples_length = 0;
-		raw->samples = NULL;
+		for(shift = 0; shift < raw->stat.bit_depth; shift += 8)
+		{
+			raw->samples[idx].l |=
+				((uint32_t) audio[bidx++]) << shift;
+		}
 
-		goto err_after_decode;
+		raw->samples[idx].r = 0;
+
+		for(shift = 0; shift < raw->stat.bit_depth; shift += 8)
+		{
+			raw->samples[idx].r |=
+				((uint32_t) audio[bidx++]) << shift;
+		}
 	}
 
 err_after_decode:
@@ -347,67 +343,4 @@ int s_write_raw_mono_audio(FILE *out, const s_raw_audio_t *raw)
 	fflush(out);
 
 	return 0;
-}
-
-/*!
- * This function reads and interprets the next sample from the given byte
- * buffer. We return true if there are more samples to be read, or false if
- * we've reached the end of the buffer.
- *
- * \param s The array of samples which will be populated.
- * \param soff The offset of the sample to populate. This will be incremented.
- * \param d The byte buffer to read sample data from.
- * \param doff The offset to read from the buffer. This will be incremented.
- * \param bytes The length of the given buffer, in bytes.
- * \param bits The bit depth of the samples to read.
- * \return True if there are more samples to read, or false if we're done.
- */
-int s_process_next_sample(s_stereo_sample_t *s, size_t *soff,
-	const char *d, size_t *doff, size_t bytes, uint32_t bits)
-{
-	size_t o;
-
-	/*
-	 * We expect that the raw PCM data is stereo samples. For example, for
-	 * data with a bit depth of 16, we would expect each sample to look
-	 * like this (where each block is an 8-bit byte):
-	 *
-	 *     | Left MSB | Left LSB | Right MSB | Right LSB |
-	 */
-
-	// Clear both channels of the sample initially.
-
-	s[*soff].l = 0;
-	s[*soff].r = 0;
-
-	// Make sure the bytes for these samples aren't out of bounds.
-
-	if( (*doff + (bits / 4)) >= bytes )
-		return 0;
-
-	// Read the bytes for the left channel.
-
-	for(o = 0; o < (bits / 8); ++o)
-	{
-		s[*soff].l <<= 8;
-		s[*soff].l |= (uint32_t) d[*doff + o];
-	}
-
-	*doff += (bits / 8);
-
-	// Read the bytes for the right channel.
-
-	for(o = 0; o < (bits / 8); ++o)
-	{
-		s[*soff].r <<= 8;
-		s[*soff].r |= (uint32_t) d[*doff + o];
-	}
-
-	*doff += (bits / 8);
-
-	// Increase the sample index, and then we're done.
-
-	++(*soff);
-
-	return 1;
 }

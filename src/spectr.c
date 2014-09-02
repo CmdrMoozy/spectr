@@ -101,31 +101,6 @@ int main(int argc, char *argv[])
 		audio->samples_length, duration / 60, duration % 60);
 #endif
 
-	// If applicable, dump the raw data back to a file (for debugging).
-
-	if(argc >= 3)
-	{
-		FILE *out = fopen(argv[2], "wb");
-
-		if(out == NULL)
-		{
-			s_print_error(-errno);
-			ret = EXIT_FAILURE;
-			goto err_after_raw_alloc;
-		}
-
-		r = s_write_raw_audio(out, audio);
-
-		fclose(out);
-
-		if(r < 0)
-		{
-			s_print_error(r);
-			ret = EXIT_FAILURE;
-			goto err_after_raw_alloc;
-		}
-	}
-
 	// Compute the STFT of the raw audio input.
 
 #ifdef SPECTR_DEBUG

@@ -31,7 +31,4 @@ extern int s_copy_raw_audio_window(s_raw_audio_t **, const s_raw_audio_t *,
 	size_t, size_t);
 extern int s_decode_raw_audio(s_raw_audio_t *, const char *);
 
-extern int s_write_raw_audio(FILE *, const s_raw_audio_t *);
-extern int s_write_raw_mono_audio(FILE *, const s_raw_audio_t *);
-
 #endif

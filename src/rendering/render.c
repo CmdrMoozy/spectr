@@ -256,26 +256,39 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	{
 		for(dfti = 1; dfti < stft->dfts[stfti]->length / 2; ++dfti)
 		{
-			// Get the X and Y values in the right range.
+			/*
+			 * Scale the X value to the range of pixels in our
+			 * spectrogram viewport. For the Y value, we can just
+			 * shift it up to be inside the spectrogram viewport,
+			 * since our viewport's rows are mapped 1-1 to DFT
+			 * frequency bins.
+			 */
 
 			x = s_scale(0, stft->length, S_VIEW_X_MIN + 1,
 				S_VIEW_X_MAX - 1, stfti);
 
 			y = (double) (dfti + S_VIEW_Y_MIN);
 
-			// Round to the nearest integer pixel.
+			// Round the X value to the nearest integer pixel.
 
 			x = rint(x);
 
-			// Clip the coordinates to our view's range.
+			// Clip the X value to be inside our viewport.
 
 			x = fmax(x, S_VIEW_X_MIN + 1);
 			x = fmin(x, S_VIEW_X_MAX - 1);
 
-			// Compute the Z value.
+			/*
+			 * Compute the Z value of this DFT result. We take the
+			 * base-10 logarithm of the value, since e.g. decibels
+			 * are a logarithmic scale, so our output will map more
+			 * directly to e.g. human hearing.
+			 */
 
 			z = s_magnitude(&(stft->dfts[stfti]->dft[dfti]));
 			z = log10(z);
+
+			// If we got a bogus Z value, just skip it.
 
 			if(isinf(z) || isnan(z))
 				continue;
@@ -286,12 +299,28 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 				vbo->data,
 				S_VIEW_W,
 				averageCount,
-				x - (S_VIEW_X_MIN + 1),
+
+				/*
+				 * The X and Y positions *in the array* need to
+				 * be 0-indexed, not S_VIEW_Y_MIN + 1 indexed.
+				 */
+				x - ((double) S_VIEW_X_MIN) - 1.0,
 				y - ((double) S_VIEW_Y_MIN) - 1.0,
+
 				x,
+
+				/*
+				 * Shift our Y value to be inside the
+				 * spectrogram viewport area. We are reversing
+				 * it, since in our OpenGL projection pixel
+				 * (0,0) is at the top left of the window,
+				 * instead of the bottom left.
+				 */
 				((double) S_VIEW_Y_MAX) - y +
 					((double) S_VIEW_Y_MIN),
-				z);
+
+				z
+			);
 		}
 	}
 
@@ -299,6 +328,11 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 
 	for(idx = 2; idx < vbo->length; idx += 3)
 	{
+		/*
+		 * If this value is still zero (i.e., it was never set in the
+		 * loop above), then don't include it in the range computation.
+		 */
+
 		if(fabs(vbo->data[idx]) < 0.0001)
 			continue;
 
@@ -306,7 +340,11 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 		maxz = fmax(maxz, vbo->data[idx]);
 	}
 
-	// Shift the values down so they are in the range [0, maxz].
+	/*
+	 * Shift the values down so they are in the range [0, maxz]. This makes
+	 * it easier to color the pixels. See our fragment shader in glinit.c
+	 * for more details.
+	 */
 
 	for(idx = 2; idx < vbo->length; idx += 3)
 		vbo->data[idx] = fmax(vbo->data[idx] - minz, 0.0f);
@@ -314,7 +352,12 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 	maxz -= minz;
 	minz = 0.0;
 
-	// Set our maximum magnitude, so we can give it to the shader later.
+	/*
+	 * Set the variable containing our maximum magnitude. The fragment
+	 * shader's uniform will be set to this value later, in the rendering
+	 * loop, since we can't set uniform values until glUseProgram() is
+	 * called.
+	 */
 
 	s_max_magnitude = maxz;
 

@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
 	if(argc < 2)
 	{
-		printf("Usage: spectr <file to analyze> [PCM out file]\n");
+		printf("Usage: spectr <file to analyze>\n");
 
 		ret = EXIT_FAILURE;
 		goto done;

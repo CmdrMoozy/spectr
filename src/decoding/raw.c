@@ -156,9 +156,9 @@ int s_decode_raw_audio(s_raw_audio_t *raw, const char *f)
 	int r;
 	uint8_t *audio;
 	size_t bytes;
+	FILE *in;
+	int16_t buf[1];
 	size_t idx;
-	size_t bidx;
-	uint32_t shift;
 
 	// Try decoding the input file.
 
@@ -170,12 +170,20 @@ int s_decode_raw_audio(s_raw_audio_t *raw, const char *f)
 		goto done;
 	}
 
+	in = fmemopen(audio, bytes, "r");
+
+	if(in == NULL)
+	{
+		ret = -errno;
+		goto err_after_decode;
+	}
+
 	r = s_audio_stat(&(raw->stat), f);
 
 	if(r < 0)
 	{
 		ret = r;
-		goto err_after_decode;
+		goto err_after_fmemopen;
 	}
 
 	/*
@@ -200,7 +208,7 @@ int s_decode_raw_audio(s_raw_audio_t *raw, const char *f)
 	if( (bytes % raw->samples_length) != 0 )
 	{
 		ret = -EINVAL;
-		goto err_after_decode;
+		goto err_after_fmemopen;
 	}
 
 	raw->samples_length = bytes / raw->samples_length;
@@ -209,32 +217,22 @@ int s_decode_raw_audio(s_raw_audio_t *raw, const char *f)
 	if(raw->samples == NULL)
 	{
 		ret = -ENOMEM;
-		goto err_after_decode;
+		goto err_after_fmemopen;
 	}
 
 	// Iterate through the decoded raw data, reading in each sample.
 
 	for(idx = 0; idx < raw->samples_length; ++idx)
 	{
-		bidx = idx * (raw->stat.bit_depth / 8) * 2;
+		fread(buf, sizeof(int16_t), 1, in);
+		raw->samples[idx].l = buf[0];
 
-		raw->samples[idx].l = 0;
-
-		for(shift = 0; shift < raw->stat.bit_depth; shift += 8)
-		{
-			raw->samples[idx].l |=
-				((uint32_t) audio[bidx++]) << shift;
-		}
-
-		raw->samples[idx].r = 0;
-
-		for(shift = 0; shift < raw->stat.bit_depth; shift += 8)
-		{
-			raw->samples[idx].r |=
-				((uint32_t) audio[bidx++]) << shift;
-		}
+		fread(buf, sizeof(int16_t), 1, in);
+		raw->samples[idx].r = buf[0];
 	}
 
+err_after_fmemopen:
+	fclose(in);
 err_after_decode:
 	free(audio);
 done:
@@ -268,7 +266,7 @@ int s_write_raw_audio(FILE *out, const s_raw_audio_t *raw)
 
 		for(byte = byted; byte > 0; --byte)
 		{
-			shift = (byte - 1) << 3;
+			shift = (byte - 1) * 8;
 			buf[bufidx++] = (raw->samples[i].l >> shift) & 0xFF;
 		}
 
@@ -283,7 +281,7 @@ int s_write_raw_audio(FILE *out, const s_raw_audio_t *raw)
 
 		for(byte = byted; byte > 0; --byte)
 		{
-			shift = (byte - 1) << 3;
+			shift = (byte - 1) * 8;
 			buf[bufidx++] = (raw->samples[i].r >> shift) & 0xFF;
 		}
 

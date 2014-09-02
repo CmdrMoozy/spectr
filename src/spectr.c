@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
 			goto err_after_raw_alloc;
 		}
 
-		r = s_write_raw_mono_audio(out, audio);
+		r = s_write_raw_audio(out, audio);
 
 		fclose(out);
 

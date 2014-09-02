@@ -43,7 +43,7 @@ typedef struct s_mad_buffer
 
 int s_is_mp3_frame_header(const uint8_t *, size_t);
 enum mad_flow s_mad_input(void *, struct mad_stream *);
-int s_mad_scale(mad_fixed_t);
+int16_t s_mad_scale(mad_fixed_t);
 enum mad_flow s_mad_output(void *,
 	struct mad_header const *, struct mad_pcm *);
 enum mad_flow s_mad_error(void *, struct mad_stream *, struct mad_frame *);
@@ -312,7 +312,7 @@ enum mad_flow s_mad_input(void *data, struct mad_stream *stream)
  * \param sample The sample to scale.
  * \return The sample, scaled down to 16-bits.
  */
-int s_mad_scale(mad_fixed_t sample)
+int16_t s_mad_scale(mad_fixed_t sample)
 {
 	sample += (1L << (MAD_F_FRACBITS - 16));
 
@@ -337,13 +337,12 @@ int s_mad_scale(mad_fixed_t sample)
 enum mad_flow s_mad_output(void *data, struct mad_header const *UNUSED(header),
 	struct mad_pcm *pcm)
 {
-	uint8_t outbuf[2];
+	int16_t outbuf[1];
 	s_mad_buffer_t *buffer = data;
 	unsigned int nchannels;
 	unsigned int nsamples;
 	mad_fixed_t const *left_ch;
 	mad_fixed_t const *right_ch;
-	int sample;
 
 	nchannels = pcm->channels;
 	nsamples = pcm->length;
@@ -352,21 +351,13 @@ enum mad_flow s_mad_output(void *data, struct mad_header const *UNUSED(header),
 
 	while(nsamples--)
 	{
-		sample = s_mad_scale(*left_ch++);
-
-		outbuf[0] = sample & 0xFF;
-		outbuf[1] = (sample >> 8) & 0xFF;
-
-		fwrite(outbuf, sizeof(uint8_t), 2, buffer->out);
+		outbuf[0] = s_mad_scale(*left_ch++);
+		fwrite(outbuf, sizeof(int16_t), 1, buffer->out);
 
 		if(nchannels == 2)
 		{
-			sample = s_mad_scale(*right_ch++);
-
-			outbuf[0] = sample & 0xFF;
-			outbuf[1] = (sample >> 8) & 0xFF;
-
-			fwrite(outbuf, sizeof(uint8_t), 2, buffer->out);
+			outbuf[0] = s_mad_scale(*right_ch++);
+			fwrite(outbuf, sizeof(int16_t), 1, buffer->out);
 		}
 	}
 

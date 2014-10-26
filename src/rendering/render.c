@@ -115,8 +115,15 @@ int s_render(const s_stft_t *stft)
 
 	r = s_init_gl(s_render_loop, s_vbo_list, s_vbo_list_length, stft);
 
+	if(r < 0)
+	{
+		ret = r;
+		goto err_after_stft_alloc;
+	}
+
 	// Clean up and return.
 
+err_after_stft_alloc:
 	free(s_vbo_list[1].data);
 err_after_vbo_alloc:
 	free(s_vbo_list);
@@ -350,7 +357,6 @@ int s_alloc_stft_vbo(s_vbo_t *vbo, const s_stft_t *stft)
 		vbo->data[idx] = fmax(vbo->data[idx] - minz, 0.0f);
 
 	maxz -= minz;
-	minz = 0.0;
 
 	/*
 	 * Set the variable containing our maximum magnitude. The fragment

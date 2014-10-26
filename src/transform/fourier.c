@@ -118,6 +118,9 @@ int s_init_dft_result(s_dft_t *dft, size_t length)
 {
 	size_t i;
 
+	if(length < 1)
+		return -EINVAL;
+
 	// Free the existing result, if any.
 
 	if(dft->dft != NULL)

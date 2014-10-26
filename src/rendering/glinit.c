@@ -415,6 +415,9 @@ int s_init_vbo(s_vbo_t *o, size_t l)
 {
 	size_t i;
 
+	if(l < 1)
+		return -EINVAL;
+
 	for(i = 0; i < l; ++i)
 	{
 		glGenBuffers(1, &(o[i].obj));

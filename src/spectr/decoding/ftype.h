@@ -16,25 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_UTIL_COMPLEX_H
-#define INCLUDE_SPECTR_UTIL_COMPLEX_H
+#ifndef INCLUDE_SPECTR_DECODING_FTYPE_H
+#define INCLUDE_SPECTR_DECODING_FTYPE_H
 
-#include "types.h"
+#ifdef HAVE_AV_CONFIG_H
+#undef HAVE_AV_CONFIG_H
+#endif
 
-#include <stdio.h>
-#include <stddef.h>
+#include <libavcodec/avcodec.h>
 
-extern void s_cadd(s_complex_t *, const s_complex_t *, const s_complex_t *);
-extern void s_csub(s_complex_t *, const s_complex_t *, const s_complex_t *);
-extern void s_cmul(s_complex_t *, const s_complex_t *, const s_complex_t *);
+#include "spectr/types.h"
 
-extern void s_cmul_r(s_complex_t *, const s_complex_t *, double);
-
-extern void s_cexp(s_complex_t *, double x);
-
-extern double s_magnitude(const s_complex_t *);
-
-extern int s_cprintf(const s_complex_t *);
-extern int s_cfprintf(FILE *, const s_complex_t *);
+extern int s_ftype(s_ftype_t *, const char *);
+extern enum AVCodecID s_codec_for_ftype(s_ftype_t);
 
 #endif

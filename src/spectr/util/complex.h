@@ -16,20 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_DECODING_STAT_H
-#define INCLUDE_SPECTR_DECODING_STAT_H
+#ifndef INCLUDE_SPECTR_UTIL_COMPLEX_H
+#define INCLUDE_SPECTR_UTIL_COMPLEX_H
 
-#include <stdint.h>
+#include "spectr/types.h"
+
+#include <stdio.h>
 #include <stddef.h>
 
-#include "types.h"
+extern void s_cadd(s_complex_t *, const s_complex_t *, const s_complex_t *);
+extern void s_csub(s_complex_t *, const s_complex_t *, const s_complex_t *);
+extern void s_cmul(s_complex_t *, const s_complex_t *, const s_complex_t *);
 
-extern int s_audio_stat(s_audio_stat_t *, const char *);
+extern void s_cmul_r(s_complex_t *, const s_complex_t *, double);
 
-extern uint32_t s_audio_duration_sec(const s_audio_stat_t *, size_t);
-extern int s_audio_duration_str(char *, size_t, const s_audio_stat_t *, size_t);
+extern void s_cexp(s_complex_t *, double x);
 
-extern uint32_t s_nyquist_frequency(const s_audio_stat_t *);
-extern int s_nyquist_frequency_str(char *, size_t, const s_audio_stat_t *);
+extern double s_magnitude(const s_complex_t *);
+
+extern int s_cprintf(const s_complex_t *);
+extern int s_cfprintf(FILE *, const s_complex_t *);
 
 #endif

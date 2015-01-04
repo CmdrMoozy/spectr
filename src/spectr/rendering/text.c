@@ -16,16 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_RENDERING_GLINIT_H
-#define INCLUDE_SPECTR_RENDERING_GLINIT_H
+#include "text.h"
 
-#include <GLFW/glfw3.h>
-#include <GL/gl.h>
+#include <errno.h>
 
-#include "types.h"
+#include "spectr/defines.h"
 
-extern int s_init_gl(int (*)(const s_stft_t *, GLuint *),
-	s_vbo_t *, size_t, const s_stft_t *);
-extern int s_set_max_magnitude(GLfloat);
-
-#endif
+int s_render_text_texture(GLuint *UNUSED(texture),
+	const char *UNUSED(font), unsigned int UNUSED(pixelW),
+	unsigned int UNUSED(pixelH), const char *UNUSED(str))
+{
+	return -EINVAL;
+}

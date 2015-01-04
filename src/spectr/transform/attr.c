@@ -20,8 +20,8 @@
 
 #include <errno.h>
 
-#include "defines.h"
-#include "util/bitwise.h"
+#include "spectr/defines.h"
+#include "spectr/util/bitwise.h"
 
 /*!
  * This function computes the STFT window size we should be using, assuming

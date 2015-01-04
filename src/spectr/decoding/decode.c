@@ -20,8 +20,8 @@
 
 #include <errno.h>
 
-#include "decoding/ftype.h"
-#include "decoding/quirks/mp3.h"
+#include "spectr/decoding/ftype.h"
+#include "spectr/decoding/quirks/mp3.h"
 
 /*!
  * This function decodes the contents of the file denoted the the path f,

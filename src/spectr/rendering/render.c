@@ -28,12 +28,12 @@
 #include FT_FREETYPE_H
 #include <GLFW/glfw3.h>
 
-#include "config.h"
-#include "decoding/stat.h"
-#include "rendering/glinit.h"
-#include "util/complex.h"
-#include "util/fonts.h"
-#include "util/math.h"
+#include "spectr/config.h"
+#include "spectr/decoding/stat.h"
+#include "spectr/rendering/glinit.h"
+#include "spectr/util/complex.h"
+#include "spectr/util/fonts.h"
+#include "spectr/util/math.h"
 
 int s_render_loop(const s_stft_t *, GLuint *);
 void s_set_spectrogram_vec3(GLfloat *, size_t, uint32_t *,

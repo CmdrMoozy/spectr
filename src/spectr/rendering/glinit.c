@@ -28,8 +28,8 @@
 	#include <stdio.h>
 #endif
 
-#include "config.h"
-#include "constants.h"
+#include "spectr/config.h"
+#include "spectr/constants.h"
 
 int s_init_program();
 int s_set_uniforms();

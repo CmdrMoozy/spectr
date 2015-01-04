@@ -1,8 +1,3 @@
-#     - To enable "release" or "debug" builds, instantiate as follows:
-#
-#           cmake -DCMAKE_BUILD_TYPE=Release ..		(DEFAULT)
-#           cmake -DCMAKE_BUILD_TYPE=Debug ..
-
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.9)
 PROJECT(spectr)
 
@@ -48,55 +43,48 @@ INCLUDE_DIRECTORIES(${FREETYPE_INCLUDE_DIRS})
 
 # Define our project's source files.
 
-SET(spectr_HEADERS
-
-	src/config.h
-	src/constants.h
-	src/types.h
-
-	src/decoding/decode.h
-	src/decoding/ftype.h
-	src/decoding/raw.h
-	src/decoding/stat.h
-
-	src/decoding/quirks/mp3.h
-
-	src/rendering/glinit.h
-	src/rendering/render.h
-
-	src/transform/attr.h
-	src/transform/fourier.h
-
-	src/util/bitwise.h
-	src/util/complex.h
-	src/util/fonts.h
-	src/util/math.h
-	src/util/path.h
-
-)
-
 SET(spectr_SOURCES
 
-	src/spectr.c
+	src/spectr/spectr.c
 
-	src/decoding/decode.c
-	src/decoding/ftype.c
-	src/decoding/raw.c
-	src/decoding/stat.c
+	src/spectr/config.h
+	src/spectr/constants.h
+	src/spectr/types.h
 
-	src/decoding/quirks/mp3.c
+	src/spectr/decoding/decode.c
+	src/spectr/decoding/decode.h
+	src/spectr/decoding/ftype.c
+	src/spectr/decoding/ftype.h
+	src/spectr/decoding/raw.c
+	src/spectr/decoding/raw.h
+	src/spectr/decoding/stat.c
+	src/spectr/decoding/stat.h
 
-	src/rendering/glinit.c
-	src/rendering/render.c
+	src/spectr/decoding/quirks/mp3.c
+	src/spectr/decoding/quirks/mp3.h
 
-	src/transform/attr.c
-	src/transform/fourier.c
+	src/spectr/rendering/glinit.c
+	src/spectr/rendering/glinit.h
+	src/spectr/rendering/render.c
+	src/spectr/rendering/render.h
+	src/spectr/rendering/text.c
+	src/spectr/rendering/text.h
 
-	src/util/bitwise.c
-	src/util/complex.c
-	src/util/fonts.c
-	src/util/math.c
-	src/util/path.c
+	src/spectr/transform/attr.c
+	src/spectr/transform/attr.h
+	src/spectr/transform/fourier.c
+	src/spectr/transform/fourier.h
+
+	src/spectr/util/bitwise.c
+	src/spectr/util/bitwise.h
+	src/spectr/util/complex.c
+	src/spectr/util/complex.h
+	src/spectr/util/fonts.c
+	src/spectr/util/fonts.h
+	src/spectr/util/math.c
+	src/spectr/util/math.h
+	src/spectr/util/path.c
+	src/spectr/util/path.h
 
 )
 

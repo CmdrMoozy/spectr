@@ -21,13 +21,13 @@
 #include <string.h>
 #include <errno.h>
 
-#include "config.h"
-#include "types.h"
-#include "decoding/raw.h"
-#include "rendering/render.h"
-#include "transform/attr.h"
-#include "transform/fourier.h"
-#include "util/math.h"
+#include "spectr/config.h"
+#include "spectr/types.h"
+#include "spectr/decoding/raw.h"
+#include "spectr/rendering/render.h"
+#include "spectr/transform/attr.h"
+#include "spectr/transform/fourier.h"
+#include "spectr/util/math.h"
 
 #ifdef SPECTR_DEBUG
 	#include <assert.h>

@@ -23,7 +23,7 @@
 #include <string.h>
 #include <errno.h>
 
-#include "util/path.h"
+#include "spectr/util/path.h"
 
 /*!
  * This function places the absolute path to our monospace TTF font file in the

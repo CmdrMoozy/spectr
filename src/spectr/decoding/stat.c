@@ -23,8 +23,8 @@
 #include <math.h>
 #include <inttypes.h>
 
-#include "decoding/ftype.h"
-#include "decoding/quirks/mp3.h"
+#include "spectr/decoding/ftype.h"
+#include "spectr/decoding/quirks/mp3.h"
 
 int s_audio_stat_mp3(s_audio_stat_t *, const char *);
 int s_interpret_mp3_rate(s_audio_stat_t *, uint8_t, uint8_t);

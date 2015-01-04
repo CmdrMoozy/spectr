@@ -16,18 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_DECODING_FTYPE_H
-#define INCLUDE_SPECTR_DECODING_FTYPE_H
+#ifndef INCLUDE_SPECTR_UTIL_MATH_H
+#define INCLUDE_SPECTR_UTIL_MATH_H
 
-#ifdef HAVE_AV_CONFIG_H
-#undef HAVE_AV_CONFIG_H
-#endif
+#include <stdint.h>
 
-#include <libavcodec/avcodec.h>
+#include "spectr/types.h"
 
-#include "types.h"
-
-extern int s_ftype(s_ftype_t *, const char *);
-extern enum AVCodecID s_codec_for_ftype(s_ftype_t);
+extern int32_t s_mono_sample(s_stereo_sample_t);
+extern double s_scale(double omin, double omax,
+	double nmin, double nmax, double v);
 
 #endif

@@ -27,10 +27,10 @@
 	#include <assert.h>
 #endif
 
-#include "decoding/raw.h"
-#include "util/math.h"
-#include "util/bitwise.h"
-#include "util/complex.h"
+#include "spectr/decoding/raw.h"
+#include "spectr/util/math.h"
+#include "spectr/util/bitwise.h"
+#include "spectr/util/complex.h"
 
 int s_fft_r(s_dft_t *, size_t, const s_raw_audio_t *, size_t, size_t, size_t,
 	double (*)(int32_t, size_t), size_t, size_t);

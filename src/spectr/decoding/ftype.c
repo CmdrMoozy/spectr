@@ -18,7 +18,7 @@
 
 #include "ftype.h"
 
-#include "decoding/quirks/mp3.h"
+#include "spectr/decoding/quirks/mp3.h"
 
 /*!
  * This function determines the file type of the file denoted by the given path

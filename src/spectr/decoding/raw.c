@@ -21,9 +21,9 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "decoding/decode.h"
-#include "decoding/stat.h"
-#include "util/math.h"
+#include "spectr/decoding/decode.h"
+#include "spectr/decoding/stat.h"
+#include "spectr/util/math.h"
 
 /*!
  * This function initializes (allocates) a s_raw_audio_t variable. If the

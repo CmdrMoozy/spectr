@@ -19,7 +19,7 @@
 #ifndef INCLUDE_SPECTR_RENDERING_RENDER_H
 #define INCLUDE_SPECTR_RENDERING_RENDER_H
 
-#include "types.h"
+#include "spectr/types.h"
 
 extern int s_render(const s_stft_t *stft);
 

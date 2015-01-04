@@ -16,15 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef INCLUDE_SPECTR_UTIL_MATH_H
-#define INCLUDE_SPECTR_UTIL_MATH_H
+#ifndef INCLUDE_SPECTR_DECODING_STAT_H
+#define INCLUDE_SPECTR_DECODING_STAT_H
 
 #include <stdint.h>
+#include <stddef.h>
 
-#include "types.h"
+#include "spectr/types.h"
 
-extern int32_t s_mono_sample(s_stereo_sample_t);
-extern double s_scale(double omin, double omax,
-	double nmin, double nmax, double v);
+extern int s_audio_stat(s_audio_stat_t *, const char *);
+
+extern uint32_t s_audio_duration_sec(const s_audio_stat_t *, size_t);
+extern int s_audio_duration_str(char *, size_t, const s_audio_stat_t *, size_t);
+
+extern uint32_t s_nyquist_frequency(const s_audio_stat_t *);
+extern int s_nyquist_frequency_str(char *, size_t, const s_audio_stat_t *);
 
 #endif

@@ -28,8 +28,8 @@
 
 #include <mad.h>
 
-#include "defines.h"
-#include "util/bitwise.h"
+#include "spectr/defines.h"
+#include "spectr/util/bitwise.h"
 
 /*!
  * \brief This structure stores the input and output buffers for MAD decoding.
